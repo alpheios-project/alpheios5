@@ -1,0 +1,2 @@
+- using jQuery no conflict in optimized namespaced build (per http://requirejs.org/docs/faq-advanced.html) didn't work -- not sure if I was doing something wrong or not.
+- google refused to load the bookmarklet (Blocked loading mixed active content "http://alpheios.net/alpheios-demos/alpheios5-build/scripts/alph.js")
