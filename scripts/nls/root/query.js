@@ -1,0 +1,23 @@
+define({
+	"full_title": "Alpheios: Quiz Window",
+	"pofs":"Part of Speech:",
+	"pofs_correct":"Part of Speech:",
+	"header":"Please provide the following information for <span class=\"alph-infl-form\">%S</span>:",
+	"infl":"Form:",
+	"infl_correct":"Form:",
+	"infl_missing":"(interactive inflection query  not yet supported for this part of speech)",
+	"infl_hint":"Make a selection in the options on the left or click a cell in the table below to identify the inflection of <span class="alph-infl-form">%S</span>.",
+	"infl_hint_verb":"Click a cell in the table below to identify the inflection of <span class=\"alph-infl-form\">%S</span>.",
+	"infl_continue":"Would you like to continue and identify the inflected form of <span class=\"alph-infl-form\">%S</span>?",
+	"infl_yes":"Yes, I want to answer inflection questions.",
+	"infl_no":"No, just show me the inflected form.",
+	"notsupported":"Quiz is not yet supported for this word.",
+	"defs":"Translation:",
+	"defs_correct":"Translation:",
+	"defs_not_found":"(translation unavailable)",
+	"done_hint":"Click the 'Close' button to return to the text, or use one of the following tools to explore additional information about the use of <span class="alph-infl-form">%S</span> in this context.",
+	"close":"Close",
+	"correct":"Correct!",
+	"incorrect":"Sorry that's not correct. Please try again!",
+	"more":"Correct! But keep going as more words are needed to complete the translation. "
+});

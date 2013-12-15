@@ -36,7 +36,7 @@
 /**
  * @class Alph.Xlate contains the generic popup functionality
  */
-define(['jquery','main'], function($,main) {
+define(['require','jquery','logger'], function(require,$,logger) {
 	return {
     
 	    /**
@@ -236,7 +236,8 @@ define(['jquery','main'], function($,main) {
 	        }        
 	        //var browser = Alph.Xlate.getBrowser(rp);
 	        
-	        //var alphtarget = main.getLanguageTool(browser,a_e.explicitOriginalTarget).findSelection(ro,rngstr);
+	        var main = require('main');
+	        var alphtarget = main.getLanguageTool(a_e.explicitOriginalTarget).findSelection(ro,rngstr);
 
 	        // if we couldn't identify the target word, return without doing anything
 	        //if (! alphtarget.getWord())
