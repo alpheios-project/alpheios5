@@ -119,5 +119,6 @@ define(['browser-utils','logger','convert'], function(butils,logger,Convert) {
 	    }
 	    return normText;
 	};
+	return(ConvertGreek);
 
 });

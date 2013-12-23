@@ -34,7 +34,7 @@
  */
 define(['logger','browser-utils'], function(logger,butils) {
 
-	function Datafile(a_url, a_charset) {
+	function Datafile(a_url, a_charset, a_callback) {
 	    // save parameters for possible future reload
 	    this.d_url = a_url;
 	    this.d_charset = a_charset;
@@ -51,6 +51,7 @@ define(['logger','browser-utils'], function(logger,butils) {
 	    		    if (this.d_data[this.d_data.length - 1] != '\n') {
 	    		        this.d_data += '\n';
 	    			}
+	    		    a_callback.call();
 				},
 				null,
 				null);
@@ -231,4 +232,5 @@ define(['logger','browser-utils'], function(logger,butils) {
 	        return this.d_data.substring(start, end);
 	    }
 	};
+	return(Datafile);
 });

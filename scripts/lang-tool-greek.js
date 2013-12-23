@@ -30,8 +30,8 @@
  * License http://creativecommons.org/licenses/by-nc-sa/3.0/us
  */
  
-define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger','browser-utils','datafile'], 
-		function($,LanguageTool,converter,factory,prefs,logger,butils,datafile) {
+define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger','browser-utils','datafile','convert-greek','module'], 
+		function($,LanguageTool,converter,factory,prefs,logger,butils,Datafile,ConvertGreek,module) {
 
 	LanguageToolFactory.addLang('greek','LanguageTool_Greek');
 	
@@ -62,28 +62,26 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	LanguageTool_Greek.prototype.loadShortDefs = function()
 	{
 	    this.d_defsFile = Array();
-	    this.d_shortLexCode =
-	            prefs.get("dictionaries.short", this.d_sourceLanguage).split(',');
+	    this.d_shortLexCode = this.getPref("dictionaries_short").split(',');
 	
 	    for (var i = 0; i < this.d_shortLexCode.length; ++i)
 	    {
 	        // load the local short definitions dictionary data file
+	        var lex = this.d_shortLexCode[i];
 	        try
 	        {
 	            this.d_defsFile[i] =
 	                new Datafile(
-	                        prefs.get('contenturl',this.d_sourceLanguage) + '/dictionaries/' +
-	                        this.d_shortLexCode[i] +
+	                        this.getPref('contenturl') + '/dictionaries/' +
+	                        lex +
 	                        "/grc-" +
-	                        this.d_shortLexCode[i] +
+	                        lex +
 	                        "-defs.dat",
-	                        "UTF-8");
-	            logger.info(
-	                "Loaded Greek defs for " +
-	                this.d_shortLexCode[i] +
-	                "[" +
-	                this.d_defsFile[i].getData().length +
-	                " bytes]");
+	                        "UTF-8",
+	                        function() {
+	                        	logger.info("Loaded Greek defs for " + lex);
+	                        });
+	            
 	
 	        }
 	        catch (ex)
@@ -354,7 +352,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	    // identify the correct xslt parameters for the requested inflection type
 	    if (params.showpofs && ! a_checkonly)
 	    {
-	        params.content_url = prefs.get('contenturl',langObj.getLanguage());
+	        params.content_url = this.getPref('contenturl');
 	        params.html_url = 
 	            params.content_url + "/html/alph-infl-substantive.html";
 	        LanguageTool_Greek.setInflectionXSL(params,params.showpofs,form);
@@ -910,4 +908,22 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	    var normalized = this.d_converter.normalizeGreek(a_word);
 	    return normalized;
 	};
+		
+	/**
+	 * Greek-specific implementation of {@link Alph.LanguageTool#normalizeWord}.
+	 * Converts the word to precomposed unicode.
+	 * @param {String} a_word the word 
+	 * @returns the normalized version of the word
+	 * @type String
+	 */
+	LanguageTool_Greek.prototype.getModule = function()
+	{
+		return module;
+	};
+	
+	LanguageTool_Greek.prototype.getPref = function(a_name)
+	 {
+		 return (module.config())[a_name];
+	 };
+	
 });

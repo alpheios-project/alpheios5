@@ -1,4 +1,4 @@
-define([], function() {
+define(["require",'logger'], function(require,logger) {
  return {
 	 "debug" :  false,
 //	 "usemhttpd" : false,
@@ -107,10 +107,17 @@ define([], function() {
 	 },
 	 
 	 get: function(a_name,a_lang) {
-		 // TODO hierarchical values
 		 var value = null;
+	     // TODO hierarchical values
 		 if (a_lang != null) {
-			 value = this[a_lang][a_name];
+			var main = require('main');
+			var tmp = $('<div lang="' + a_lang + '"/>').get(0);
+			try {
+				var lt = main.getLanguageTool(tmp);
+				value = lt.getPref(a_name);
+			} catch (a_e) {
+				logger.warn("Unable to get " + a_lang + " language tool to check preference " + a_name);
+			}
 		 }
 		 if (value == null) {
 			 value = this[a_name];

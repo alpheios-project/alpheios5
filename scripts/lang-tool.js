@@ -32,8 +32,8 @@
  * @param {Properties} a_properties additional properties to set as private members of
  *                                  the object (accessor methods will be dynamically created)
  */
-define(['jquery','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils'], 
-		function($,main,logger,prefs,convert,constants,select,xlate,butils,utils) {
+define(['jquery','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"i18n!nls/main","datafile","module"], 
+		function($,main,logger,prefs,Convert,constants,select,xlate,butils,utils,mainstr,Datafile,module) {
 	 /**
 	  * @class  LanguageTool is the base class for language-specific
 	  * functionality.
@@ -45,6 +45,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	  */
 	 function LanguageTool(a_language,a_properties)
 	 {
+		 var langObj = this;
 	     this.d_sourceLanguage = a_language;
 	     this.d_idsFile = Array();
 	     this.d_defsFile = Array();
@@ -59,19 +60,17 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         ContextForward:
 	             function()
 	             {
-	                 return prefs.get("context_forward",a_language)
-	                     || 0;
+	                 return langObj.getModule().config().context_forward || 0;
 	             },
 	         ContextBack:
 	             function()
 	             {
-	                 return prefs.get("context_back",a_language)
-	                     || 0;
+	                 return langObj.getModule().config().context_back || 0;
 	             },
 	         PkgName:
 	             function()
 	             {
-	                 return prefs.get("chromepkg",a_language);
+	                 return langObj.getModule().config().chromepkg;
 	             },
 	         Language:
 	             function()
@@ -81,7 +80,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         LanguageCode:
 	             function()
 	             {
-	                 var codes = prefs.get("languagecode",a_language);
+	                 var codes = langObj.getModule().config().languagecode;
 	                 if (codes)
 	                 {
 	                     // first code in list is the preferred code
@@ -93,18 +92,18 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	             {
 	                 // individual language may override the popuptrigger,
 	                 // but they don't have to
-	                 return prefs.get("popuptrigger",a_language);
+	                 return langObj.getModule().config().popuptrigger;
 	             },
 	         UseMhttpd:
 	             function()
 	             {
-	                 return prefs.get("usemhttpd",a_language);
+	                 return langObj.getModule().config().usemhttpd;
 	             },
 	         GrammarLinks:
 	             function()
 	             {
 	                 var grammarlinklist = {};
-	                 var links = prefs.get("grammar.hotlinks",a_language);
+	                 var links = langObj.getModule().config().grammar_hotlinks;
 	                 if (typeof links != "undefined")
 	                 {
 	                     links = links.split(/,/);
@@ -118,7 +117,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         Pofs:
 	             function()
 	             {
-	                 var pofs = prefs.get("partsofspeech",a_language);
+	                 var pofs = langObj.getModule().config().partsofspeech;
 	                 if (pofs)
 	                 {
 	                     return pofs.split(/,/);
@@ -132,7 +131,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         Direction:
 	             function()
 	             {
-	                 return prefs.get("textdirection",a_language);                
+	                 return langObj.getModule().config().textdirection;                
 	             }
 	             
 	     };
@@ -148,7 +147,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     this.setShiftHandler();
 	     this.loadConverter();
 
-	     var startup_methods = prefs.get("methods.startup",a_language);
+	     var startup_methods = this.getModule().config().methods_startup;
 	     if (typeof startup_methods != "undefined")
 	     {
 	         startup_methods = startup_methods.split(/,/);
@@ -186,6 +185,125 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 {
 	     this.d_converter = new Convert();  
 	 };
+	 
+	 /**
+	 * load lemma id lookup files
+	 * @returns true if successful, otherwise false
+	 * @type boolean
+	 */
+	LanguageTool.prototype.loadLexIds = function()
+	{
+	    this.d_idsFile = Array();
+	    this.d_fullLexCode = this.getModule().config().dictionaries_full.split(',');
+	    var contentUrl = this.getModule().config().contenturl;
+	    var langCode = this.getLanguageCode();
+	    var langString = this.getLanguageString();
+
+	    for (var i = 0; i < this.d_fullLexCode.length; ++i)
+	    {
+	        var lexCode = this.d_fullLexCode[i];
+	        var fileName = contentUrl +
+	                       '/dictionaries/' +
+	                       lexCode +
+	                       '/' +
+	                       langCode +
+	                       '-' +
+	                       lexCode +
+	                       "-ids.dat";
+	        try
+	        {
+	            this.d_idsFile[i] = new Datafile(fileName, "UTF-8",
+	            	function() {
+	            		logger.info("Loaded " + fileName);	
+	            	}
+	            );
+	            
+	        }
+	        catch (ex)
+	        {
+	            // the ids file might not exist, in particular for remote,
+	            // non-alpheios-provided dictionaries
+	            // so just quietly log the error in this case
+	            // later code must take a null ids file into account
+	            logger.error("error loading " +
+	                                langString +
+	                                " ids from " +
+	                                fileName +
+	                                ": " +
+	                                ex);
+	            return false;
+	        }
+	    }
+	    return true;
+	}
+
+	/**
+	 * Initializes lexicon search parameters
+	 */
+	LanguageTool.prototype.lexiconSetup = function()
+	{
+	    // nothing to do if no language defined
+	    var language = this.d_sourceLanguage;
+	    if (!language || typeof language == "undefined")
+	        return;
+
+	    // read lexicon parameters
+	    // look first for lexicon-specific values and then, if not found,
+	    // for generic lexicon-independent values
+	    logger.debug("Reading params for " + language);
+	    this.d_lexiconSearch = Array();
+	    var codeList;
+	    try 
+	    {
+	        codeList = this.getModule().config().dictionaries_full;
+	    }
+	    catch(a_e){
+	        // the preference might not be defined
+	        codeList = null;
+	    }
+	    var codes = (codeList ? codeList.split(',') : Array());
+	    var defaultBase = "dictionary_full_search.";
+	    for (var i = 0; i < codes.length; ++i)
+	    {
+	        var code = codes[i];
+	        var base = "dictionary_full_" + code + "_search_";
+	        this.d_lexiconSearch[code] = Array();
+	        this.d_lexiconSearch[code]["url"] =
+	        	this.getModule().config()[base + "url"];
+
+	        // if lexicon-specific URL is defined
+	        if (this.d_lexiconSearch[code]["url"])
+	        {
+	            // read lexicon-specific values
+	            this.d_lexiconSearch[code]["lemma"] =
+	            	this.getModule().config()[base + "lemma_param"];
+	            this.d_lexiconSearch[code]["id"] =
+	            	this.getModule().config()[base + "id_param"];
+	            this.d_lexiconSearch[code]["multiple"] =
+	            	this.getModule().config()[base + "multiple"];
+	            this.d_lexiconSearch[code]["convert"] =
+	            	this.getModule().config()[base + "convert_method"];
+	            this.d_lexiconSearch[code]["transform"] =
+	            	this.getModule().config()[base + "transform_method"];
+	        }
+	        // else use lexicon-independent values
+	        else
+	        {
+	            this.d_lexiconSearch[code]["url"] =
+	            	this.getModule().config()[defaultBase + "url"];
+	            this.d_lexiconSearch[code]["lemma"] =
+	            	this.getModule().config()[defaultBase + "lemma_param"];
+	            this.d_lexiconSearch[code]["id"] =
+	            	this.getModule().config()[defaultBase + "id_param"];
+	            this.d_lexiconSearch[code]["multiple"] =
+	            	this.getModule().config()[defaultBase + "multiple"];
+	            this.d_lexiconSearch[code]["convert"] =
+	            	this.getModule().config()[defaultBase + "convert_method"];
+	            this.d_lexiconSearch[code]["transform"] =
+	            	this.getModule().config()[defaultBase + "transform_method"];
+	        }
+	    }
+	};
 
 	 /**
 	  * source langage for this instance
@@ -247,8 +365,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     // get the base unit
 	     // default to 'word' if not defined
 	     var base_unit =
-	         prefs.get('base_unit',
-	                          this.d_sourceLanguage) || 'word';
+	    	 this.getModule().config()['base_unit'] || 'word';
 	     if (base_unit == 'word')
 	     {
 	         /**
@@ -290,6 +407,102 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     alert("No selection method defined");
 	     return {};
 	 };
+	 
+	 /**
+	  * Sets the lexiconLookup method for the instance of the class.
+	  * This is derived according to the language-specific configuration.
+	  * @see #lexiconLookup
+	  * @private
+	  */
+	 LanguageTool.prototype.setLexiconLookup = function()
+	 {
+	     var lexicon_method =
+	    	 this.getModule().config().methods_lexicon;
+	     
+	     if (lexicon_method == 'webservice')
+	     {        
+	         
+	         /**
+	          * @ignore
+	          */
+	         this.lexiconLookup = function(a_alphtarget,a_onsuccess,a_onerror)
+	         {
+	             logger.info("Query word: " + a_alphtarget.getWord());
+
+	             var url = this.getModule().config().url_lexicon;
+	             // override local daemon per main prefs
+	             if (utils.isLocalUrl(url) && this.getModule().config().morphservice_remote)
+	             {
+	            	 url = this.getModule().config().morphservice_remote_url;
+	              
+	             }
+	             url = url + this.getModule().config().url_lexicon_request;
+	             url = url.replace(/\<WORD\>/,
+	                                   encodeURIComponent(a_alphtarget.getWord()));
+	             // TODO add support for the context in the lexicon url
+
+	     
+	             $.ajax(
+	                 {
+	                     type: "GET",
+	                     url: url,
+	                     timeout: this.getModule().config().url_lexicon_timeout,
+	                     dataType: 'html', //TODO - get from prefs
+	                     error: function(req,textStatus,errorThrown)
+	                     {
+	                         a_onerror(textStatus||errorThrown);
+	                     },
+	                     success: function(data, textStatus)
+	                         { a_onsuccess(data); }
+	                    }
+	             );
+	         }
+	         
+	     }
+	     else if (typeof this[lexicon_method] == 'function')
+	     {
+	         this.lexiconLookup = this[lexicon_method];
+	     }
+	     else
+	     {
+	         logger.error("methods.lexicon invalid or undefined: " + lexicon_method);
+	     }
+	 }
+
+	 /**
+	  * Looks up the target selection in the lexicon tool
+	  * @param {Alph.SourceSelection} a_alphtarget the target selection object (as returned by findSelection)
+	  * @param {function} a_onsuccess callback upon successful lookup.
+	  *                               Takes the lexicon output as an argument.
+	  * @param {function} a_onerror callback upon successful lookup.
+	  *                             Takes an error message as argument.
+	  */
+	 LanguageTool.prototype.lexiconLookup = function(a_alphtarget,a_onsuccess,a_onerror)
+	 {
+	     a_onerror(mainstr.error_nolexicon.replace("%S",this.d_sourceLanguage));
+	 };
+	 
+	 /**
+	  * Set the contextHandler method for the instance of the class.
+	  * This is derived according to the language-specific configuration.
+	  * @see #contextHandler
+	  * @private
+	  */
+	 LanguageTool.prototype.setContextHandler = function()
+	 {
+	     var context_handler =
+	    	 this.getModule().config().context_handler;
+	     if (typeof this[context_handler] == 'function')
+	     {
+	         this.contextHandler = this[context_handler];
+	     }
+	     else
+	     {
+	         logger.info("No context_handler defined for " + this.d_sourceLanguage);
+	     }
+
+	 }
+
 
 	 /**
 	  * Method which can be used to add language-specific
@@ -313,7 +526,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 LanguageTool.prototype.setShiftHandler = function()
 	 {
 	     var shift_handler =
-	         prefs.get("shift_handler",this.d_sourceLanguage);
+	    	 this.getModule().config().shift_handler;
 	     if (typeof this[shift_handler] == 'function')
 	     {
 	         this.shiftHandler = this[shift_handler];
@@ -543,7 +756,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 {
 	     var self = this;
 	     var convert_method =
-	         prefs.get("methods.convert",this.d_sourceLanguage);
+	    	 this.getModule().config().methods_convert;
 
 	     if (convert_method != null
 	         && typeof this.d_converter[convert_method] == 'function'
@@ -558,7 +771,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 LanguageTool.prototype.convertString = function(a_str)
 	 {
 	   var convert_method =
-	         prefs.get("methods.convert",this.d_sourceLanguage);
+		   this.getModule().config().methods_convert;
 
 	     if (convert_method != null
 	         && typeof this.d_converter[convert_method] == 'function')
@@ -612,13 +825,13 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 LanguageTool.prototype.openGrammar = function(a_event,a_node,a_target,a_params)
 	 {
 	     var thisObj = this;
-	     var targetURL = prefs.get("url.grammar",this.d_sourceLanguage) || "";
+	     var targetURL = this.getModule().config().url_grammar || "";
 	     targetURL = targetURL.replace(/\<ITEM\>/, a_target || "");
 
 	     var grammar_loading_msg = main.getString("alph-loading-grammar");
 	     var features =
 	     {
-	         screen: prefs.get("grammar.window.loc")
+	         screen: this.getModule().config().grammar_window_loc
 	     };
 
 	     // TODO - list of parameters to pass should come from
@@ -671,7 +884,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     
 	     var features = {};
 
-	     var window_url = prefs.get('contenturl') + "/diagram/alpheios-diagram.xul";
+	     var window_url = this.getModule().config().contenturl + "/diagram/alpheios-diagram.xul";
 	     var params = $.extend(
 	         {
 	             e_callback: a_node ? 
@@ -768,7 +981,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     if (typeof params.showpofs == 'undefined')
 	     {
 	         params.xml_url =
-	             prefs.get("contenturl",this.d_sourceLanguage)
+	        	 this.getModule().config().contenturl
 	             + "/inflections/alph-infl-index.xml";
 	         params.xslt_processor = butils.getXsltProcessor('alph-infl-index.xsl');
 	     }
@@ -790,7 +1003,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     {
 	         width:"300",
 	         height:"620",
-	         screen: prefs.get("shift.window.loc")
+	         screen: prefs.get("shift_window_loc")
 	     }
 	     // add a callback to hide the loading message
 	     var loading_msg = main.getString("alph-loading-inflect");
@@ -956,7 +1169,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	  */
 	 LanguageTool.prototype.getFeature = function(a_id)
 	 {
-	     var enabled = prefs.get("features."+a_id,this.d_sourceLanguage);
+	     var enabled = prefs.get("features_"+a_id,this.d_sourceLanguage);
 	     logger.debug("Feature " + a_id + " for " + this.d_sourceLanguage + " is " + enabled);
 	     return enabled;
 	 };
@@ -969,7 +1182,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	  */
 	 LanguageTool.prototype.getCmd = function(a_cmd)
 	 {
-	     return prefs.get("cmds."+a_cmd,this.d_sourceLanguage);
+	     return prefs.get("cmds_"+a_cmd,this.d_sourceLanguage);
 	 };
 
 	 /**
@@ -1005,14 +1218,14 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     var codeList;
 	     try 
 	     {
-	         codeList = prefs.get("dictionaries.full",this.d_sourceLanguage).split(/,/);
+	         codeList = prefs.get("dictionaries_full",this.d_sourceLanguage).split(/,/);
 	     }
 	     catch(a_e){
 	         // the preference might not be defined
 	         codeList = [];
 	     }
 	     
-	     var remote_disabled = prefs.get("disable.remote");
+	     var remote_disabled = prefs.get("disable_remote");
 	     for (var i=0; i<codeList.length; i++)
 	     {
 	         var code = codeList[i];
@@ -1061,7 +1274,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     {
 	 		var body_key = $(a_entry).attr("body-key");
 	 		var key_url =prefs.get(
-	                 "dictionary.full." + dict + ".browse.url." + body_key,
+	                 "dictionary_full_" + dict + "_browse_url_" + body_key,
 	                 this.d_sourceLanguage);
 	 		if (body_key && key_url)
 	 		{
@@ -1071,19 +1284,19 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 		{
 	 			browse_url =
 	 	            prefs.get(
-	 	                "dictionary.full." + dict + ".browse.url",
+	 	                "dictionary_full_" + dict + "_browse_url",
 	 	                this.d_sourceLanguage);	
 	 		}    	    	
 	     	if (a_browseRoot && $(a_entry).attr("root"))
 	     	{    		    		
 	     		var root_param = prefs.get(
-	                     "dictionary.full." + dict + ".browse.root_param",
+	                     "dictionary_full_" + dict + "_browse_root_param",
 	                     this.d_sourceLanguage);
 	     		if (root_param != null)
 	     		{      	                
 	     			var cvt = 
-	     				prefs.get("dictionary.full." + dict
-	     						+ ".browse.convert_method", this.d_sourceLanguage);
+	     				prefs.get("dictionary_full." + dict
+	     						+ ".browse_convert_method", this.d_sourceLanguage);
 	     			var root_term = $(a_entry).attr("root");
 	     			if (cvt != null
 	     				        && typeof this.d_converter[cvt] == 'function')                
@@ -1143,7 +1356,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     {
 	         dict_method =
 	             prefs.get(
-	                 "methods.dictionary.full.default",
+	                 "methods_dictionary_full_default",
 	                 this.d_sourceLanguage);
 	     }
 
@@ -1319,7 +1532,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	             type: "GET",
 	             url: a_url,
 	             dataType: 'html',
-	             timeout: prefs.get("methods.dictionary.full.default.timeout",
+	             timeout: prefs.get("methods_dictionary_full_default_timeout",
 	                                         this.d_sourceLanguage),
 	             error: function(req,textStatus,errorThrown)
 	             {
@@ -1386,7 +1599,9 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 LanguageTool.prototype.getString = function(a_name,a_replace)
 	 {
 
-	     return main.getLanguageString(this.d_sourceLanguage,a_name,a_replace)
+		 // TODO HTML5 strings
+	     //return main.getLanguageString(this.d_sourceLanguage,a_name,a_replace)
+		 return a_name;
 	 }
 
 	 /**
@@ -1517,10 +1732,10 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     }
 	     
 	     if (this.getFeature('alpheios-speech') 
-	         && prefs.get("url.speech",this.d_sourceLanguage)
+	         && prefs.get("url_speech",this.d_sourceLanguage)
 	         // Currently speech function piggy backs on morphservice.remote setting because
 	         // espeak is called through mhttpd and must be enabled only if mhttpd is
-	         && !(prefs.get("morphservice.remote")))
+	         && !(prefs.get("morphservice_remote")))
 	     {
 	         var alt_text = main.getString('alph-speech-link');
 	         var link = $(
@@ -1887,7 +2102,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     var lang_obj = this;
 	     var form = $(".alph-word",a_node).attr("context");
 	     logger.debug("Speak word: " + form);
-	     var url = prefs.get("url.speech",this.d_sourceLanguage);
+	     var url = prefs.get("url_speech",this.d_sourceLanguage);
 	     url = url.replace(/\<WORD\>/,encodeURIComponent(form));
 	     // send asynchronous request to the speech service
 	     logger.debug("Speech url " + url);
@@ -1895,7 +2110,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     {
 	         type: "GET",
 	         url: url,
-	         timeout: prefs.get("url.speech.timeout",lang_obj.d_sourceLanguage),
+	         timeout: prefs.get("url_speech_timeout",lang_obj.d_sourceLanguage),
 	         error: function(req,textStatus,errorThrown)
 	         {
 	             xlate.hideLoadingMessage($(a_node).get(0).ownerDocument);
@@ -1993,6 +2208,17 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 LanguageTool.prototype.getPunctuation = function()
 	 {
 	     return ".,;:!?'\"(){}\\[\\]<>\/\\\u00A0\u2010\u2011\u2012\u2013\u2014\u2015\u2018\u2019\u201C\u201D\u0387\u00B7\n\r";        
-	 }
+	 };
+	 
+	 LanguageTool.prototype.getPref = function(a_name)
+	 {
+		 return prefs.get(a_name);
+	 };
+	 
+	 LanguageTool.prototype.getModule = function()
+		{
+			return module;
+		};
+
 	 return(LanguageTool);
 });

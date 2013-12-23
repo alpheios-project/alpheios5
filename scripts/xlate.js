@@ -36,8 +36,8 @@
 /**
  * @class Alph.Xlate contains the generic popup functionality
  */
-define(['require','jquery','logger'], function(require,$,logger) {
-	return {
+define(['require','jquery','logger','prefs','browser-utils','i18n!nls/main','utils'], function(require,$,logger,prefs,butils,mainstr,utils) {
+	var xlate = {
     
 	    /**
 	     * Handler for the popup trigger event.
@@ -136,7 +136,7 @@ define(['require','jquery','logger'], function(require,$,logger) {
 	        if ( $(a_e.explicitOriginalTarget).hasClass('alpheios-ignore') ||
 	             $(a_e.explicitOriginalTarget).parents('.alpheios-ignore').length > 0)
 	        {
-	            this.clearSelection();
+	            xlate.clearSelection();
 	            return;
 	        }
 	        
@@ -231,7 +231,7 @@ define(['require','jquery','logger'], function(require,$,logger) {
 	        // then it was empty space so just clear the selection and return
 	        if (ro >= rngstr.length) {
 
-	            this.clearSelection();
+	            xlate.clearSelection();
 	            return;
 	        }        
 	        //var browser = Alph.Xlate.getBrowser(rp);
@@ -347,8 +347,335 @@ define(['require','jquery','logger'], function(require,$,logger) {
 	            }
 	        }
 	        // show output
-	//        this.showPopup(a_e,alphtarget);
-	        alert("ShowPopup " + a_e);
-	    }
+	        xlate.showPopup(a_e,alphtarget);
+	        var lt = main.getLanguageTool(); 
+	    },
+	    /**
+	     * Determines whether or not the popup should be displayed in response
+	     * to the trigger event. Called by the {@link #doMouseMoveOverText} event handler.
+	     * @private
+	     * @param {Event} the event which triggered the popup
+	     * @param {Object} the details on the target of the event which triggered the popup
+	     *                 @see Alph.LanguageTool#findSelection
+	     */
+	    showPopup: function(a_e, a_alphtarget)
+	    {
+	
+	        var a_elem = a_e.target;
+	        var a_x = a_e.screenX;
+	        var a_y = a_e.screenY;
+	        var pageX = a_e.pageX;
+	        var pageY = a_e.pageY;
+	        var main = require('main');
+	        //var browser = this.getBrowser(a_elem);
+	        var lang_tool = main.getLanguageTool(a_elem);
+	        const topdoc = a_elem.ownerDocument;
+	        // TODO HTML 5 browser state
+	        //var alph_state = Alph.Main.getStateObj(browser);
+	        var popup = $("#alph-window").get(0);
+	        // check the alpheios state object for the prior element
+	        //if (alph_state.getVar("lastElem"))
+	        if (false)
+	        {
+	        	try {
+	        		popup = $("#alph-window",alph_state.getVar("lastElem").ownerDocument).get(0);
+	        	} catch(e){
+	                Alph.Main.s_logger.error("Error getting lastElem: " + e);
+	        	}
+	        	
+	        }
+	        // if the popup window exists, and it's in a different document than
+	        // the current one, remove it from the prior document
+	        // TODO HTML5 browser state
+	        //if (popup && (topdoc != alph_state.getVar("lastElem").ownerDocument))
+	        if (false)
+	        {
+	            xlate.removePopup(browser);
+	            popup = null;
+	        }
+	
+	        // popup element not found or removed, so create a new one
+	        if (!popup)
+	        {
+	            var style_url = prefs.get("styleurl");
+	            // add the base alpheios stylesheet
+	            var css = topdoc.createElementNS("http://www.w3.org/1999/xhtml",
+	                                             "link");
+	            css.setAttribute("rel", "stylesheet");
+	            css.setAttribute("type", "text/css");
+	            css.setAttribute("href", style_url + "/alpheios.css");
+	            css.setAttribute("class", "alpheios-css");
+	            $("head",topdoc).append(css);
+	            var css_os = $(css).clone()
+	                .attr("href", style_url + "/alpheios-os.css");         
+	            $("head",topdoc).append(css_os);
+	
+	            // add any language-specific stylesheet
+	            lang_tool.addStyleSheet(topdoc);
+	            
+	            // flag the popup if we're on an enhanced text site
+	            // TODO HTML5 site functionality
+	            //var enhanced_class = Alph.Site.isPedSite([topdoc]).length > 0 ? ' alpheios-enhanced' : '';
+	            var enhanced_class ='';
+	            
+	            popup = topdoc.createElementNS("http://www.w3.org/1999/xhtml", "div");
+	            popup.setAttribute("id", "alph-window");
+	            popup.setAttribute("class", "alpheios-ignore" + enhanced_class);
+	
+	            /* cancel the mousemove and dblclick events over the popup */
+	            /* this probably can come out as I've switched to using the
+	             * alpheios-ignore class, but leaving in commented out for now
+	             */
+	            //popup.addEventListener("mousemove", this.cancelMouseMove, false);
+	            //popup.addEventListener("dblclick", this.cancelDoubleClick, false);
+	            
+	            $("body",topdoc).append(popup);
+	            
+	
+	            // add a close link
+	            $(popup).append('<div class="alph-title-bar"><div class="alph-close-button">&#160;</div></div>')
+	            $(".alph-close-button",topdoc).bind("click",
+	                function()
+	                {
+	                    xlate.hidePopup(this.ownerDocument);
+	                }
+	            );
+	
+	            $('.alph-title-bar',popup).bind('mousedown',xlate.dragPopup);
+	
+	            var anchor = topdoc.createElementNS("http://www.w3.org/1999/xhtml",
+	                                                 "a");
+	            anchor.setAttribute("name","alph-window-anchor");
+	            anchor.setAttribute("id","alph-window-anchor");
+	            popup.appendChild(anchor);
+	        }
+	
+	        // add the element to the alpheios state object in the browser,
+	        // so that it can be accessed to remove the popup later
+	        // TODO HTML5 browser state
+	        //alph_state.setVar("lastElem",a_elem);
+	
+	        popup.style.width = "auto";
+	        popup.style.height = "auto";
+	
+	        var frame_offset;
+	        var frame_scroll;
+	
+	        // get the frame offset and scroll coordines, if the selected
+	        // element is in a frame
+	        if (a_elem.ownerDocument.defaultView.frameElement != null)
+	        {
+	            try
+	            {
+	                frame_offset = $(a_elem.ownerDocument.defaultView.frameElement).offset();
+	                frame_scroll = {};
+	                var frame_body = $("body",topdoc).get(0);
+	                frame_scroll.left = frame_body.scrollLeft;
+	                frame_scroll.top = frame_body.scrollTop;
+	            }
+	            catch(e)
+	            {
+	                logger.error("Error getting frame coords: " + e);
+	            }
+	        }
+	
+	        // TODO this should be a config option
+	        popup.style.maxWidth = "600px";
+	
+	        /* reset the contents of the popup */
+	        var xlate_loading = 
+	        	mainstr.loading_translation.replace("%S",a_alphtarget.getWord());
+	        $("#alph-text",popup).remove();
+	        $("#alph-window",topdoc).get(0).removeAttribute("alpheios-pending");
+	        $("#alph-window",topdoc).append(
+	            '<div id="alph-text"><div id="alph-text-loading">' +
+	            xlate_loading +
+	            '</div></div>'
+	        );
+	
+	        // move the popup to just below the mouse coordinates
+	        // (using height of current element isn't reliable because it might
+	        //  a single element which contains a large block of text)
+	        var buffer = 12;
+	        if (a_elem)
+	        {
+	            pageY = pageY + buffer;
+	        }
+	
+	        popup.style.left = pageX + "px";
+	        popup.style.top = pageY + "px";
+	        popup.style.display = "";
+	        $(popup).attr("alph-orig-y",pageY-buffer);
+	        xlate.repositionPopup(popup);
+	        // add the original word to the browser's alpheios object so that the
+	        // other functions can access it
+	        // TODO HTML5 browser state
+	        //alph_state.setVar("word",a_alphtarget.getWord());
+	
+	        var doc_array = [topdoc];
+	        
+	        //Alph.Main.d_panels['alph-morph-panel'].getCurrentDoc().forEach(
+	        //    function(a_doc)
+	        //    {
+	        //        lang_tool.addStyleSheet(a_doc);
+	        //        Alph.$("#alph-window",a_doc).css("display","block");
+	        //        doc_array.push(a_doc);
+	        //    }
+	        //);
+	        //Alph.Main.d_panels['alph-dict-panel'].getCurrentDoc().forEach(
+	        //    function(a_doc)
+	        //    {
+	        //       lang_tool.addStyleSheet(a_doc);
+	        //        Alph.$("#alph-window",a_doc).css("display","block");
+	        //        doc_array.push(a_doc);
+	        //    }
+	        //);
+	
+	        // lookup the selection in the lexicon
+	        // pass a callback to showTranslation to populate
+	        // the popup and any other lexicon
+	        // output browsers (i.e. in the morph panel)
+	        // with the results on success,
+	        // and a call back to translationError to populate
+	        // the popup with an error message on failure
+	        lang_tool.lexiconLookup(
+	            a_alphtarget,
+	            function(data)
+	            {
+	                xlate.showTranslation(data,a_alphtarget,doc_array,lang_tool);
+	
+	            },
+	            function(a_msg)
+	            {
+	                xlate.translationError(a_msg,doc_array,lang_tool);
+	            }
+	        );
+	    },
+	
+	    /**
+	     * Hides the popup and removes the alpheios stylesheets from the
+	     * browser content document.
+	     * @param {Node} a_node - the node which contains the popup
+	     */
+	    hidePopup: function(a_node)
+	    {
+	    	// TODO HTML5 browser state
+	        //var topdoc = a_node || this.getLastDoc();
+	    	var topdoc = a_node;
+	        $("#alph-window",topdoc).css("display","none");
+	        $("#alph-text",topdoc).remove();
+	        xlate.clearSelection(topdoc);
+	        // TODO HTML5 browser state
+	        // remove the last word from the state
+	        //var alph_state = Alph.Main.getStateObj();
+	        //if (alph_state.getVar("enabled"))
+	        //{
+	        //    alph_state.setVar("lastWord", null);
+	        //    alph_state.setVar("lastSelection",null);
+	
+	        //}
+	        // TODO HTML 5 events
+	        //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.HIDE_POPUP);
+	        // keep the last element in the state, so that we can find
+	        // the popup (and stylesheets) again
+	    },
+	    /**
+	     * reposition the popup to be in the viewport
+	     * @param {Element} a_popup the popup element
+	     */
+	    repositionPopup: function(a_popup)
+	    {
+	        var popup_elem = $(a_popup).get(0);
+	        if (!popup_elem || popup_elem.ownerDocument != xlate.getLastDoc())
+	        {
+	            // only reposition for the popup in the original browser window,
+	            // not the alph-window elements in the various panels
+	            return;
+	        }
+	        var current_offset = $(a_popup).offset();
+	        
+	        var below_the_fold = utils.belowTheFold(popup_elem);
+	        var right_of_screen = utils.rightOfScreen(popup_elem);
+	        
+	        if (below_the_fold > 0)
+	        {
+	            // when calculating the starting y position for the popup
+	            // always start from the original location of the mouse click
+	            var floor = $(a_popup).attr("alph-orig-y");
+	            if (typeof floor == "undefined" || floor == null)
+	            {
+	                floor = current_offset.top;
+	            }
+	            // move the floor up a little bit to try to clear the selected
+	            // word -- unfortunately calculating the height of the selected word is not reliable
+	            floor = floor - 12;
+	     
+	            // ceiling is the top of the viewport
+	            var ceiling = popup_elem.ownerDocument.defaultView.pageYOffset;
+	            
+	            var new_top = floor - $(a_popup).height();
+	            if (new_top < ceiling)
+	            {
+	                new_top = ceiling;
+	            }
+	            
+	            popup_elem.style.top = new_top + 'px'; 
+	        }
+	        if (right_of_screen > 0)
+	        {
+	            var new_left = current_offset.left - right_of_screen;
+	            if (new_left < 0)
+	            {
+	                new_left = 0;
+	            }
+	            popup_elem.style.left = new_left + 'px'; 
+	        }
+	    },
+	    
+	    getLastDoc : function() {
+	    	// TODO HTML5 browser state
+	    	return document;
+	    },
+	    
+	    /**
+	     * Displays an error in the popup. Supplied as a callback argument
+	     * to the {@link Alph.LanguageTool#lexiconLookup} method.
+	     * @param {String} a_msg the error message
+	     * @param a_doc_array Array of Documents which holds the morphological details
+	     * @param a_lang_tool the Alph.Language object which initiated the lookup
+	     */
+	    translationError: function (a_msg,a_doc_array)
+	    {
+	        var err_msg = mainstr.loading_error.replace("%S",a_msg);
+	        logger.error("Query Response (Error): " + err_msg);
+	        //if (Alph.Main.useLocalDaemon() &&
+	        //    typeof Alph.Main.getCurrentBrowser()
+	        //                  .alpheios.daemonPid == "undefined")
+	        //{
+	        //    err_msg = err_msg + '<br/>' + Alph.Main.getString("alph-error-mhttpd-notstarted");
+	        //}
+
+	        // the first document in the array is the main one
+	        var a_topdoc = a_doc_array[0];
+
+	        a_doc_array.forEach(
+	           function(a_doc)
+	           {
+	                $("#alph-text-loading",a_doc).remove();
+
+	                // replace any earlier error
+	                $("#alph-loading-error",a_doc).remove();
+
+	                $("#alph-text",a_doc).append(
+	                    '<div id="alph-loading-error">' +
+	                    err_msg +
+	                    '</div>'
+	                );
+	           }
+	       );
+	        // TODO HTML5 events
+	       //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
+	    },
 	};
+	return (xlate);
 });

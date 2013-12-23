@@ -36,8 +36,8 @@
  * @class Alpheios utility functions
  */
 
-define(['jquery','browser-utils','logger','languages'], 
-		function($,butils,logger,languages) {
+define(['jquery','browser-utils','logger','require'], 
+		function($,butils,logger,require) {
 
 	//TODO HTML5 datafile implementation
     //Components.utils.import("resource://alpheios/alpheios-datafile.jsm",Alph);
@@ -341,6 +341,8 @@ define(['jquery','browser-utils','logger','languages'],
 	    getLanguageForDoc: function(a_doc)
 	    {
 	        var lang_key = null;
+	        var main = require('main');
+	        var languages = main.getLanguages();
 	        var doc_lang = 
 	            a_doc.documentElement.getAttribute("xml:lang") ||
 	            a_doc.documentElement.getAttribute("lang") ||
@@ -364,7 +366,7 @@ define(['jquery','browser-utils','logger','languages'],
 	     *         or null if the language either isn't found or isn't supported
 	     * @type String
 	     */
-	    getLanguageForElement: function(a_elem)
+	    getLanguageForElement: function(a_elem,a_languages)
 	    {
 	        var lang_key = null;
 	        var elem_lang = null;
@@ -380,14 +382,18 @@ define(['jquery','browser-utils','logger','languages'],
 	            {
 	                break;
 	            }
-	        }                       
+	        }                  
+	        var mapped_lang;
 	        if(elem_lang)
 	        {
-	            elem_lang = languages.mapLanguage(elem_lang);
+	            mapped_lang = a_languages.mapLanguage(elem_lang);
 	        }
-	        if (elem_lang && languages.hasLang(elem_lang))
+	        if (mapped_lang && a_languages.hasLang(mapped_lang))
 	        {
-	            lang_key = elem_lang;                    
+	            lang_key = mapped_lang;                    
+	        } 
+	        else {
+	        	lang_key = elem_lang;
 	        }
 	        return lang_key;
 	    }

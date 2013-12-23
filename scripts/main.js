@@ -5,9 +5,17 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages'],
 		LanguageTool: {},
 		
 		init: function() {
-			languages.addLangTool('greek',new LanguageTool_Greek());
+			this.init_languages();
 			this.enable();
 		},
+		
+		init_languages: function() {
+			if (languages.getLangList().length == 0) {
+				languages.addLangTool('greek',new LanguageTool_Greek('greek'));
+			}
+			return languages;
+		},
+		
 		enable: function() {
 			$(document).bind("dblclick", xlate.doMouseMoveOverText);
 		},
@@ -31,7 +39,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages'],
 	        // tool for the element
 	        if (a_elem)
 	        {
-	        	lang_key = util.getLanguageForElement(a_elem);               
+	        	lang_key = util.getLanguageForElement(a_elem,languages);               
 	        }
 	        // fallback to the language for the browser
 	        if (!lang_key)
