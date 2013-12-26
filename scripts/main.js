@@ -6,7 +6,10 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages'],
 		
 		init: function() {
 			this.init_languages();
+			// initialize the xslt for the response
+	    	xlate.setXsltProcessor();
 			this.enable();
+			
 		},
 		
 		init_languages: function() {

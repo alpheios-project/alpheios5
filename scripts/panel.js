@@ -803,6 +803,4 @@ define(['jquery','main','logger','prefs','xlate','languages'],
 	    }
 	    return open;
 	};
-
- };
 });

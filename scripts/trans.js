@@ -29,7 +29,7 @@
  * @augments Alph.Panel
  * @param {alpheiosPanel} a_panel DOM object bound to the alpheiosPanel tag
  */
-define(['panel''main','logger'], function(panel,main,logger) {
+define(['panel','main','logger'], function(panel,main,logger) {
 
 	Translation = function(a_panel)
 	{

@@ -28,10 +28,22 @@
  * @class Greek string conversion class
  * @extends Convert
  */
-define(['browser-utils','logger','convert'], function(butils,logger,Convert) {
+define(['browser-utils','logger','convert','sarissa/sarissa'], function(butils,logger,Convert,Sarissa) {
 	
 	function ConvertGreek() {
 	    Convert.call(this);
+	    /* initialize the XSLT converters */
+	    var thisObj = this;
+	    butils.getXsltProcessor('alpheios-uni2betacode.xsl',null,
+	    		function(a_processor) {
+	        		thisObj.d_u2bConverter = a_processor;	
+	        	}
+	    );
+	    butils.getXsltProcessor('alpheios-normalize-greek.xsl',null,
+	    		function(a_processor) {
+	        		thisObj.d_uNormalizer = a_processor;	
+	        	}
+	    );	
 	};
 	
 	ConvertGreek.prototype = new Convert();
@@ -44,20 +56,14 @@ define(['browser-utils','logger','convert'], function(butils,logger,Convert) {
 	 */
 	ConvertGreek.prototype.greekToAscii = function(a_str)
 	{
-	    // module code doesn't have access to the browser window object under the global 
-	    // scope .. need to get a recent window to have access to browser window methods
-	     var recent_win = butils.getMostRecentWindow();
-	    /* initialize the XSLT converter if we haven't done so already */
-	    if (this.u2bConverter == null)
-	    {
-	        this.d_u2bConverter = butils.getXsltProcessor('alpheios-uni2betacode.xsl');
-	    }
 	    var betaText = '';
 	    try
 	    {
+	    	this.d_u2bConverter;
+	        var dummy = (new window.DOMParser()).parseFromString("<root/>","text/xml");
 	        this.d_u2bConverter.setParameter(null, "e_in", a_str);
-	        var dummy = (new recent_win.DOMParser()).parseFromString("<root/>","text/xml");
-	        betaText = this.d_u2bConverter.transformToDocument(dummy).documentElement.textContent;
+		    var tmpDoc = this.d_u2bConverter.transformToDocument(dummy); 
+		    betaText = $.trim(tmpDoc.documentElement.textContent);
 	    }
 	    catch (e)
 	    {
@@ -82,15 +88,6 @@ define(['browser-utils','logger','convert'], function(butils,logger,Convert) {
 	 */
 	ConvertGreek.prototype.normalizeGreek = function(a_str, a_precomposed, a_strip, a_partial)
 	{
-	    // module code doesn't have access to the browser window object under the global 
-	    // scope .. need to get a recent window to have access to browser window methods
-	    var recent_win = BrowserUtils.getMostRecentWindow();
-	    /* initialize the XSLT converter if we haven't done so already */
-	    if (this.d_uNormalizer == null)
-	    {
-	        this.d_uNormalizer = butils.getXsltProcessor('alpheios-normalize-greek.xsl');
-	    }
-	
 	    // set defaults for missing params
 	    if (typeof a_precomposed == "undefined")
 	        a_precomposed = true;
@@ -111,7 +108,7 @@ define(['browser-utils','logger','convert'], function(butils,logger,Convert) {
 	                                        "e_partial",
 	                                        (a_partial ? 1 : 0));
 	        var dummy = (new recent_win.DOMParser()).parseFromString("<root/>","text/xml");
-	        normText = this.d_uNormalizer.transformToDocument(dummy).documentElement.textContent;
+	        normText = $.trim(this.d_uNormalizer.transformToDocument(dummy).documentElement.textContent);
 	    }
 	    catch (e)
 	    {

@@ -38,7 +38,16 @@
  */
 define(['require','jquery','logger','prefs','browser-utils','i18n!nls/main','utils'], function(require,$,logger,prefs,butils,mainstr,utils) {
 	var xlate = {
-    
+
+        setXsltProcessor: function(a_proc) {
+        	var xlateObj = this;
+        	if (this.d_xsltProcessor == null) {
+        		butils.getXsltProcessor('alpheios.xsl',null,
+        				function(a_proc) { 
+        					xlateObj.d_xsltProcessor = a_proc;
+        				});
+        	}
+        },
 	    /**
 	     * Handler for the popup trigger event.
 	     * @param {Event} a_e the Event
@@ -676,6 +685,595 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/main','uti
 	        // TODO HTML5 events
 	       //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
 	    },
+	    /**
+	     * Shows the results of the lexicon lookup in the popup.
+	     * Supplied as a callback argument to the
+	     * {@link Alph.LanguageTool#lexiconLookup} method.
+	     * @param {String} a_xml the xml string containing the lexicon response
+	     * @param {Object} a_alphtarget the details on the target of the event which triggered the popup
+	     *                 (as returned by {@link Alph.LanguageTool#findSelection})
+	     * @param a_doc_arry the array of documents which contain the morphological text
+	     * @param a_lang_tool the Alph.Language object which initiated the lookup
+	     */
+	    showTranslation: function(a_xml,a_alphtarget,a_doc_array,a_lang_tool) {
+
+	        // the first document in the array is the main one
+	        var a_topdoc = a_doc_array[0];
+
+	        var wordHTML = xlate.transform(a_xml);
+
+	        // don't display an empty popup
+	        if (   (wordHTML == '')
+	            || (   ($(".alph-entry",wordHTML).size() == 0)
+	                && ($(".alph-unknown",wordHTML).size() == 0)
+	                && ($(".alph-error",wordHTML).size() == 0)))
+	        {
+	            logger.warn("No valid entries to display.");
+	            a_doc_array.forEach(
+	                function(a_doc)
+	                {
+	                    xlate.hidePopup(a_doc);
+	                }
+	            );
+	        }
+
+	        // add a class to the first word in the response
+	        $("div.alph-word:first",wordHTML).addClass("alph-word-first");
+
+	        a_doc_array.forEach(
+	            function(a_doc)
+	            {
+
+	                $("#alph-text",a_doc).remove();
+	            }
+	        );
+
+	        var alphtext_node =
+	            a_topdoc.importNode(
+	                                        wordHTML.getElementById("alph-text"),
+	                                        true);
+	        var disambiguate_id = null;
+	        if (a_alphtarget.getTreebankQuery())
+	        {
+	            disambiguate_id =
+	                (new Date()).getTime()
+	                + encodeURIComponent(a_alphtarget.getWord());
+	        }
+	        a_lang_tool.postTransform(alphtext_node);
+	        // TODO HTML5 query functionality
+	        //if (Alph.Interactive.enabled())
+	        //{
+	        //    Alph.$("#alph-window",a_topdoc).addClass("query-pending");
+	        //}
+
+	        a_doc_array.forEach(
+	            function(a_doc)
+	            {
+	                var alph_node = $("#alph-window",a_doc);
+	                if (disambiguate_id)
+	                {
+	                    alph_node.attr("alpheios-pending",
+	                                                      disambiguate_id);
+	                }
+	                alph_node.append(
+	                                                $(alphtext_node).clone());
+	                // add the key to the language tool to the element
+	                $("#alph-text",alph_node).attr('alph-lang',
+	                    a_lang_tool.d_sourceLanguage);
+	                // add language-specific click handler, if any
+	                a_lang_tool.contextHandler(a_doc);
+
+	                $("#alph-text",alph_node).prepend(
+	                                                '<div id="alph-word-tools"/>');
+	                a_lang_tool.addWordTools(
+	                    $("#alph-text",alph_node),
+	                    a_alphtarget);
+
+	                a_lang_tool.addInflHelp(
+	                    $("#alph-text",alph_node),
+	                    a_alphtarget);
+	                xlate.repositionPopup(alph_node);
+	            }
+	        );
+
+
+	        var rp = a_alphtarget.getRangeParent();
+
+	        // re-highlight the translated range in the source document
+	        // This code fails for an svg element; For now just skip it
+	        // but we should eventually also highlight the selection within the svg
+	        if (rp && ! rp instanceof SVGElement)
+	        {
+	            var doc = rp.ownerDocument;
+	            var r = doc.createRange();
+	            r.setStart(rp, a_alphtarget.getWordStart());
+	            r.setEnd(rp, a_alphtarget.getWordEnd());
+	            var sel = doc.defaultView.getSelection();
+	            sel.removeAllRanges();
+	            sel.addRange(r);
+	        }
+
+	        // focus on the popup window so that we make sure our event handlers
+	        // are going to be invoked (i.e. if a textbox elsewhere is focused, the keydown
+	        // event listener might be hijacked) See Bug 149.
+	        $("#alph-window-anchor",a_topdoc).focus();
+	        // TODO - we probably should reposition the popup now that we
+	        // know it's final size
+
+	        
+	        // disambiguate if treebank is available
+	        if (disambiguate_id)
+	        {
+	            logger.debug("Disambiguating ..." +
+	                          a_alphtarget.getTreebankQuery());
+	            // send asynchronous request to the lexicon service
+	            $.ajax(
+	                {
+	                    type: "GET",
+	                    url: a_alphtarget.getTreebankQuery(),
+	                    timeout: butils.getPref("url_treebank_timeout") || 5000,
+	                    dataType: 'html',
+	                    error: function(req,textStatus,errorThrown)
+	                    {
+	                        logger.error("Error disambiguating morphology: " +
+	                                      textStatus||errorThrown);
+	                        a_doc_array.forEach(
+	                            function(a_doc)
+	                            {
+	                                try
+	                                {
+	                                    $("#alph-window[alpheios-pending="+
+	                                           disambiguate_id+"]",
+	                                           a_doc).get(0).removeAttribute(
+	                                                            "alpheios-pending");
+	                                }
+	                                catch(a_e)
+	                                {
+	                                    //it's possible that a new request came in and removed the
+	                                    // attribute, so quietly ignore error removing it
+	                                }
+	                            }
+	                        );
+	                        // TODO HTML5 events
+	                        //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
+	                    },
+	                    success: function(data, textStatus)
+	                    {
+
+	                        xlate.updateTranslation(disambiguate_id,
+	                                                     data,
+	                                                     a_alphtarget,
+	                                                     a_doc_array,
+	                                                     a_lang_tool);
+	                    }
+	                }
+	            );
+	        }
+	        else
+	        {
+	        	// TODO HTML5 events and queyr
+	            //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
+	            //if (! Alph.Interactive.enabled())
+	            //{
+	            //    a_lang_tool.addToWordList(Alph.$("#alph-window #alph-text",a_topdoc),false,false);
+	            //}
+	            //Alph.Interactive.openQueryDisplay(a_topdoc,a_alphtarget,a_lang_tool);
+	        }
+
+	    },
+	    /**
+	     * Update the results of the lexicon lookup in the popup.
+	     * @param {String} a_req_id unique identifier for the disambiguate request
+	     * @param {String} a_xml the xml string containing the lexicon response
+	     * @param {Object} a_alphtarget the details on the target of the event which triggered the popup
+	     *                 (as returned by {@link Alph.LanguageTool#findSelection})
+	     * @param a_doc_array the array of Documents which contain the morphological text
+	     * @param a_lang_tool the Alph.Language tool which initiated the request
+	     */
+	     updateTranslation: function(a_req_id,
+	                                 a_xml,
+	                                 a_alphtarget,
+	                                 a_doc_array,
+	                                 a_lang_tool)
+	     {
+	        logger.debug("Query response:" + a_xml);
+
+	        // the first document in the array is the main one
+	        var a_topdoc = a_doc_array[0];
+
+	        var wordHTML = xlate.transform(a_xml);
+	        // just quietly display the morpheus output if the treebank query
+	        // returned an error or didn't include any data
+	        // note that not all parts of speech include inflection data
+	        // so we need to check for the presence of a dictionary entry
+	        if (   (wordHTML == '') ||
+	               $(".alph-dict",wordHTML).length == 0)
+	        {
+	            a_doc_array.forEach(
+	                function(a_doc)
+	                {
+	                    try
+	                    {
+	                        $("#alph-window[alpheios-pending="+a_req_id+"]",
+	                                   a_doc).get(0).removeAttribute("alpheios-pending");
+	                    }
+	                    catch(a_e){
+	                        //it's possible that a new request came in and removed the
+	                        // attribute, so quietly ignore error removing it
+	                    }
+	                }
+	            );
+	            logger.warn("No treebank entries to display.");
+	        }
+	        else
+	        {
+
+	            var new_text_node =
+	                    window.content.document.importNode(
+	                    $("#alph-text",wordHTML).get(0),true);
+
+	            a_lang_tool.postTransform(new_text_node);
+	            a_lang_tool.contextHandler(new_text_node);
+	            a_lang_tool.addInflHelp(
+	                    new_text_node,a_alphtarget);
+	            var new_entries = $(".alph-entry",new_text_node);
+	            
+
+	            // iterate through the documents containing the morphology results
+	            // merging the disambiguated output into the original results
+	            // in each document
+	            for (var j=0; j<a_doc_array.length;j++)
+	            {
+	                var a_doc = a_doc_array[j];
+	                
+	                // if a request for a new word came in while waiting for the response
+	                // to the disambiguation requestion, the alpheios-pending attribute
+	                // won't match and we will just discard the disabmiguation
+	                // results rather than trying to merge them into a new words' results
+	                var popup =
+	                        $("#alph-window[alpheios-pending=" + a_req_id +
+	                                "] #alph-text",a_doc);
+	                if (popup.length == 0)
+	                {
+	                    logger.warn("Discarding disamibuguation " + a_req_id);
+	                    continue;
+	                }
+
+	                // remove the old word tool icons from the popup, we need to refresh
+	                // them with new tools after we incorporate the disambiguated output
+	                $("#alph-word-tools",popup).remove();
+	                var final_word_set = [];
+
+	                for (var e_index=0; e_index < new_entries.length; e_index++)
+	                {
+	                    var new_entry = new_entries.eq(e_index);
+	                    var new_dict = Alph.$(".alph-dict",new_entry);
+	                    var new_hdwd = Alph.$(new_dict).attr("lemma-key");
+	                    var new_infl_node =
+	                        $(".alph-infl",new_entry).get(0);
+	                    var new_pofs = $('.alph-pofs',new_entry).attr('context');
+	                    // try to find an entry with the same lemma and replace the
+	                    // contents of the first inflection set for that entry
+	                    // with the treebank output
+	                    var lemma_match_set =
+	                        $(".alph-dict[lemma-key=" + new_hdwd +"]",popup)
+	                        .parents(".alph-entry");
+	    
+	                    // if we didn't have a match, and the treebank lemma has a 1
+	                    // at the end of it (which means 1st sense in the dictionary entry)
+	                    // drop the 1 and try again
+	                    if (lemma_match_set.length == 0 && new_hdwd.match(/1$/))
+	                    {
+	                        new_hdwd = new_hdwd.replace(/1$/,'');
+	                    }
+	    
+	                    lemma_match_set =
+	                        $(".alph-dict[lemma-key=" + new_hdwd +"]",popup)
+	                        .parents(".alph-entry");
+	                    var pofs_match_set = [];
+	                    if (lemma_match_set.length >0)
+	                    {
+	                        pofs_match_set =
+	                            $('.alph-dict .alph-pofs[context='+new_pofs+']',lemma_match_set)
+	                                .parents('.alph-entry');
+	                        // if no matching lemma entries with matching part of speech
+	                        // at the dictionary level were found, check the pofs at the
+	                        // inflection set level
+	                        if (pofs_match_set.length == 0)
+	                        {
+	                            pofs_match_set =
+	                                $('.alph-infl-set .alph-pofs[context='+new_pofs+']',
+	                                    lemma_match_set).parents('.alph-entry');
+	                        }
+	                    }
+	                    else
+	                    {
+	                        logger.warn("Can't find entry matching treebank lemma: " + new_hdwd);
+	                    }
+	                    // if entries with matching part of speech and lemma were
+	                    // found, just use the new entry -- we'll lose details
+	                    // on the inflection but they wouldn't be right anyway
+	                    if (pofs_match_set.length == 0)
+	                    {
+	                        logger.warn("Can't find entry matching treebank lemma: " + new_hdwd
+	                            + " and pofs: " + new_pofs);
+	                        final_word_set.push(
+	                            $(new_entry).parent(".alph-word").clone(true));
+	                    }
+	                    else
+	                    {
+	                        var good_entries = 0;
+	                        // if we still have multiple matching entries at this point,
+	                        // which seems unlikely, we may keep both if inflection
+	                        // details match in both; iterate through them
+	                        // looking for the matching inflection
+	                        for (var i=0; i<pofs_match_set.length; i++)
+	                        {
+	                            var entry_match = pofs_match_set[i];
+	                            var morph_pofs =
+	                                $('.alph-dict .alph-pofs',entry_match)
+	                                    .attr('context');
+	    
+	                            // if the part of speech indicated by the
+	                            // treebank differs from the original
+	                            // replace the entire dictionary section
+	                            // (conj and declension will likely also be wrong
+	                            // - but these aren't identified by the treebank)
+	                            if (morph_pofs != new_pofs)
+	                            {
+	                                $('.alph-dict',entry_match)
+	                                    .before($(new_dict).clone(true))
+	                                    .remove();
+	                            }
+	                            
+	                            var infl_set_possible = $(".alph-infl-set",entry_match);
+	                            var infl_set_matches = [];
+	    
+	                            for (var k=0; k<infl_set_possible.length;k++)
+	                            {
+	                                var infl_set = infl_set_possible[k];
+	                                // insert the new inflection only into
+	                                // an inflection set of the same part of speech
+	                                // as the new entry
+	                                 var infl_pofs =
+	                                    $(".alph-pofs",infl_set)
+	                                        .attr('context')
+	                                    || morph_pofs;
+	                                if (infl_pofs ==
+	                                    $('.alph-pofs',new_entry).attr('context'))
+	                                {
+	                                    infl_set_matches.push(k);
+	                                }
+	                                // TODO we should test gender here too....
+	                            }
+	                            // if we found a single matching inflection set, let's
+	                            // just use it - chances are it is right
+	                            if (infl_set_matches.length == 1)
+	                            {
+	                                var matched_infl_set =
+	                                    $(infl_set_possible).eq(infl_set_matches[0]);
+	                                $('.alph-infl',matched_infl_set).remove();
+	                                if (new_infl_node != null)
+	                                {
+	                                    $(matched_infl_set)
+	                                        .append($(new_infl_node).clone(true));
+	                                }
+	                                $(matched_infl_set).siblings(".alph-infl-set").remove();
+	                                good_entries = 1;
+	                                $(entry_match).attr("tb-match",true);
+	                            }
+	                            // if we have multiple matching inflection sets,
+	                            // prefer one which contains an matching inflection
+	                            else if (infl_set_matches.length >1)
+	                            {
+	                                var merge_sets = [];
+	                                for (var k=0; k<infl_set_matches.length;k++)
+	                                {
+	                                    merge_sets.push(
+	                                        $(infl_set_possible).eq(infl_set_matches[k])
+	                                        .clone(true));
+	                                }
+	                                // remove all the old inflection sets, we're going
+	                                // to replace them with only inflection sets with
+	                                // matching inflections
+	                                $(infl_set_possible).remove();
+	                                merge_sets.forEach(
+	                                    function(a_infl_set)
+	                                    {
+	                                        var matches = 0;
+	                                        $(".alph-infl",a_infl_set).each(
+	                                            function(a_i)
+	                                            {
+	                                                if (a_lang_tool.matchInfl(new_infl_node,this))
+	                                                {
+	                                                    matches++;
+	                                                }
+	                                            }
+	                                        );
+	                                        if (matches > 0)
+	                                        {
+	                                            $('.alph-infl',a_infl_set).remove();
+	                                            $(a_infl_set)
+	                                                .append($(new_infl_node).clone(true));
+	                                            $(entry_match).append(a_infl_set);
+	                                            good_entries++;
+	                                            $(entry_match).attr("tb-match",true);
+	                                        }
+	                                    }
+	                                );
+	                            }
+	                            else
+	                            {
+	                                // if we don't have any matching inflection sets
+	                                // just drop them all .. we'll create a new one
+	                                $(infl_set_possible).remove();
+	                            }
+	                        } // end iteration through matching entries
+	    
+	                        if (good_entries == 0)
+	                        {
+	                            // if we couldn't find any matching inflection sets, then
+	                            // just use the first matching entry, and create a new
+	                            // inflection set
+	                            for (var i=1; i<pofs_match_set.length; i++)
+	                            {
+	                                $(pofs_match_set[i]).remove();
+	                            }
+	                            pofs_match_set = pofs_match_set.eq(0);
+	                            $(pofs_match_set).attr("tb-match",true);
+	                            if (new_infl_node != null)
+	                            {
+	                                var original_form =
+	                                    $(pofs_match_set).parents(".alph-word").attr("context");
+	                                $(new_infl_node).clone(true).appendTo(pofs_match_set);
+	                                $(".alph-infl",pofs_match_set)
+	                                    .wrap('<div class="alph-infl-set" context="' + original_form + '"></div>',a_doc);
+	                            }
+	                        }
+	                        // remove any entries which didn't match
+	                        $(".alph-entry:not([tb-match])",popup).remove();
+	    
+	                        for (var i=0; i<pofs_match_set.length; i++)
+	                        {
+	                           var entry_match = pofs_match_set[i];
+	    
+	                           // remove any pofs on the inflection set because
+	                           // disambiguated output will always list the pofs
+	                           // of the dictionary entry as the pofs of the inflection set
+	                            $(".alph-infl-set .alph-pofs",entry_match).each(
+	                                function()
+	                                {
+	                                    var next = $(this).next('.alph-formatting');
+	                                    var prev = $(this).prev('.alph-formatting');
+	                                    var next_comma = next.text().match(/,/);
+	                                    var prev_comma = prev.text().match(/,/);
+	                                    if ((next_comma && prev_comma) || next_comma)
+	                                    {
+	                                        // if at the beginning or middle of a list, remove only the comma which follows
+	                                        $(next).remove();
+	                                    }
+	                                    else if (prev_comma)
+	                                    {
+	                                        // if it's 2nd in the list, remove the preceeding comma
+	                                        $(prev).remove();
+	                                    }
+	                                    else
+	                                    {
+	                                        // it's the only thing in the list, so remove surrounding parens
+	                                        $(next).remove();
+	                                        $(prev).remove();
+	                                    }
+	                                    $(this).remove();
+	                                }
+	                            );
+	                           
+	                           if ($(".alph-infl-set",entry_match).length == 0)
+	                           {
+	                                // if we don't have any inflection set at all, make
+	                                // sure we remove the form label from the popup too
+	                                Alph.$(".alpheios-form-label",entry_match).remove();
+	                            }
+	                        }
+	                        final_word_set.push(
+	                            $(pofs_match_set).parents(".alph-word").clone(true));
+	                    }
+
+	                }
+	                // remove all the old word elements from the popup                 
+	                $(".alph-word",popup).remove();
+	                // remove any unknown response from the non-disambiguated results
+	                $(".alph-unknown",popup).remove();
+	                // iterate through the final word elements, adding them
+	                // back into the popup
+	                for (var i=0; i<final_word_set.length; i++)
+	                {
+	                    var word = final_word_set[i];
+	                    if (i == 0)
+	                    {
+	                        $(word).addClass("alph-word-first");
+	                    }
+	                    else
+	                    {
+	                        Alph.$(word).removeClass("alph-word-first");
+	                    }
+	                    $(word).addClass("tb-morph-word")
+	                    $('#alph-morph-credits',popup).before(word);
+	                }
+	                $(popup).prepend('<div id="alph-word-tools"/>');
+	                a_lang_tool.addWordTools(Alph.$(popup),a_alphtarget);
+	                // add the treebank credits
+	                var tb_credit = a_lang_tool.getString("treebank.credits");
+	                $("#alph-morph-credits",popup).append('<div id="alph-treebank-credits">' +
+	                        tb_credit + '</div>');
+	                    
+	                // we're finally done, so get rid of the pending status on the
+	                // popup
+	                try
+	                {
+	                    $("#alph-window[alpheios-pending="+a_req_id+"]",
+	                               a_doc).get(0).removeAttribute("alpheios-pending");
+	                    xlate.repositionPopup($("#alph-window",a_doc));
+	                    
+	                }
+	                catch(a_e)
+	                {
+	                    //it's possible that a new request came in and removed the
+	                    // attribute, so quietly ignore error removing it
+	                }
+	            }
+	        }
+
+	        $("#alph-window-anchor",a_topdoc).focus();
+	        //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
+	        //if (! Alph.Interactive.enabled())
+	        //{
+	        //    a_lang_tool.addToWordList(Alph.$("#alph-window #alph-text",a_topdoc),false,false);
+	        //}
+	        //Alph.Interactive.openQueryDisplay(a_doc_array[0],a_alphtarget,a_lang_tool);
+	    },
+	    /**
+	     * Transforms xml text adhering to the alpheios schema to html
+	     * TODO transform stylesheet may need to be language specific
+	     * @private
+	     * @param {String} a_text the text to be transformed
+	     * @returns an HTML Node containing the transformed text
+	     * @type Node
+	     */
+	    transform: function(a_text)
+	    {
+	        var wordHTML = '';
+	        try
+	        {
+	            var wordXML = (new window.DOMParser()).parseFromString(a_text,"text/xml");
+	            wordHTML = this.d_xsltProcessor.transformToDocument(wordXML);
+	        }
+	        catch (e)
+	        {
+	            logger.error(e);
+	        }
+	        return wordHTML;
+	    },
+	    /**
+	     * Clears the last selection
+	     * @param {Document} a_doc the source document
+	     */
+	     clearSelection: function(a_doc)
+	     {
+	        if (typeof a_doc == 'undefined')
+	        {
+	            a_doc = this.getLastDoc();
+	        }
+
+	        try {
+	            a_doc.defaultView.getSelection().removeAllRanges();
+	        }
+	        catch(a_e)
+	        {
+	            //TODO sometimes we get a null defaultView. Need to figure
+	            // out why and fix, rather than just logging it.
+	            Alph.Main.s_logger.error("no default view");
+	        }
+	     }
 	};
 	return (xlate);
 });

@@ -1,4 +1,4 @@
-define(["i18n!nls/main"], function(mainstr) {
+define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($,mainstr,logger,prefs,sarissa) {
  return {
 	 
 	    /** 
@@ -35,22 +35,24 @@ define(["i18n!nls/main"], function(mainstr) {
 	     * @returns a new XSLTProcessor object with the named stylesheet imported from the xslt directory of the extension 
 	     * @type XSLTProcessor
 	     */
-	     getXsltProcessor: function(a_filename,a_lang)
+	     getXsltProcessor: function(a_filename,a_lang, a_callback)
 	    {
-	        var xsltProcessor = new XSLTProcessor();
 	        
 	        // first try to load and import using a chrome url
 	        try
 	        {
 	            var xslt_url = prefs.get('contenturl',a_lang) + '/xslt/' + a_filename;
-	            var xmlDoc = document.implementation.createDocument("", "", null);
-	            xmlDoc.async = false;
-	            this.debug("Loading xslt at " + xslt_url);
-	            xmlDoc.load(xslt_url);
-	            xsltProcessor.importStylesheet(xmlDoc);
+	            $.get(xslt_url,
+	            		function(a_data,a_status,a_req) {
+	            			var xsltProcessor = new XSLTProcessor();
+	            			xsltProcessor.importStylesheet(a_data);
+	            			a_callback(xsltProcessor);
+	            		},
+	            		"xml");
 	        }
 	        catch(a_e)
 	        {
+	        	logger.error(a_e);
 	          // TODO HTML5 local xslt handling??
 	          // if that fails, try loading directly from the filesystem using XMLHttpRequest   
 	          // see https://bugzilla.mozilla.org/show_bug.cgi?id=422502
@@ -72,7 +74,6 @@ define(["i18n!nls/main"], function(mainstr) {
 	          //      this.debug("Unable to load stylesheet " + a_filename + " for " + a_lang + " : " + a_e + "," + a_ee);
 	          //  }
 	        }
-	        return xsltProcessor;
 	    },
 	    
 	    /**

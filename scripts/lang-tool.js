@@ -210,12 +210,11 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	                       '-' +
 	                       lexCode +
 	                       "-ids.dat";
+	        var ref = (this.d_idsFile[i] = {});
 	        try
 	        {
-	            this.d_idsFile[i] = new Datafile(fileName, "UTF-8",
-	            	function() {
-	            		logger.info("Loaded " + fileName);	
-	            	}
+	            new Datafile(fileName, "UTF-8",
+	            	{'data': this.d_idsFile,'index':i}
 	            );
 	            
 	        }

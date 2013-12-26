@@ -40,18 +40,20 @@ define(['logger','browser-utils'], function(logger,butils) {
 	    this.d_charset = a_charset;
 	    this.d_separator = '|';
 	    this.d_specialFlag = '@';
-	
+	    logger.info("Reading file " + a_url);
+	    var fileRef = this;
+	    var dataRef = a_callback;
 	    butils.readFile(
 	    		a_url,
 	    		a_charset,
 	    		'text',
 	    		function(a_data,a_status){
-	    			this.d_data = a_data;
+	    			fileRef.d_data = a_data;
 	    			// make sure file ends with newline
-	    		    if (this.d_data[this.d_data.length - 1] != '\n') {
-	    		        this.d_data += '\n';
+	    		    if (fileRef.d_data[fileRef.d_data.length - 1] != '\n') {
+	    		        fileRef.d_data += '\n';
 	    			}
-	    		    a_callback.call();
+	    		    dataRef.data[dataRef.index] = fileRef;
 				},
 				null,
 				null);
@@ -143,18 +145,15 @@ define(['logger','browser-utils'], function(logger,butils) {
 	        // while data still remains
 	        while (beg < end)
 	        {
-	            logger('Alpheios.DataFile').debug("bs for " + a_key);  
 	            // find line containing midpoint of remaining data
 	            mid = this.d_data.lastIndexOf('\n', (beg + end) >> 1) + 1;
 	            midStr = this.d_data.substr(mid, tlen);
 	            // if too high, restrict to first half
 	            if (a_key < midStr) {
-	                logger('Alpheios.DataFile').debug("< " + midStr);  
 	                end = mid - 1;
 	            }
 	            // if too low, restrict to second half
 	            else if (a_key > midStr) {
-	                logger('Alpheios.DataFile').debug("> " + midStr);  
 	                beg = this.d_data.indexOf('\n', mid) + 1;
 	            }
 	            // if equal, done
@@ -167,7 +166,6 @@ define(['logger','browser-utils'], function(logger,butils) {
 	        {
 	
 	
-	            logger('Alpheios.DataFile').debug("found at " + beg);  
 	            // while non-empty preceding line exists
 	            while (mid >= 2)
 	            {

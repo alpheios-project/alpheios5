@@ -61,28 +61,26 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	 */
 	LanguageTool_Greek.prototype.loadShortDefs = function()
 	{
-	    this.d_defsFile = Array();
-	    this.d_shortLexCode = this.getPref("dictionaries_short").split(',');
-	
+		var langObj = this;
+	    langObj.d_defsFile = Array();
+	    langObj.d_shortLexCode = this.getPref("dictionaries_short").split(',');	
 	    for (var i = 0; i < this.d_shortLexCode.length; ++i)
 	    {
 	        // load the local short definitions dictionary data file
-	        var lex = this.d_shortLexCode[i];
+	        var lex = langObj.d_shortLexCode[i];
+	        langObj.d_defsFile[i] = null;
 	        try
 	        {
-	            this.d_defsFile[i] =
-	                new Datafile(
+		        logger.info("Loading " + lex + " at " + i);
+	            var tmp = new Datafile(
 	                        this.getPref('contenturl') + '/dictionaries/' +
 	                        lex +
 	                        "/grc-" +
 	                        lex +
 	                        "-defs.dat",
 	                        "UTF-8",
-	                        function() {
-	                        	logger.info("Loaded Greek defs for " + lex);
-	                        });
-	            
-	
+	                        { 'index': i,
+	                          'data': langObj.d_defsFile });
 	        }
 	        catch (ex)
 	        {
@@ -104,7 +102,11 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	{
 	    try
 	    {
-	        this.d_stripper = butils.getXsltProcessor('alpheios-unistrip.xsl');
+	    	var thisObj = this;
+	        butils.getXsltProcessor('alpheios-unistrip.xsl',null,
+	        	function(a_processor) {
+	        		thisObj.d_stripper = a_processor;
+	        	});
 	    }
 	    catch (ex)
 	    {
@@ -231,7 +233,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	
 	            // check for irregular verbs
 	
-	            langObj.s_logger.debug("lemma for inflection set: " + lemma);
+				logger.debug("lemma for inflection set: " + lemma);
 	
 	            var irregular = false;
 	            for (var i=0; i< LanguageTool_Greek.IRREG_VERBS.length; i++)
@@ -342,7 +344,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	                                    }
 	                                }
 	                            }
-	                            langObj.s_logger.debug("Pronoun type="+params.type);
+	                            logger.debug("Pronoun type="+params.type);
 	                        } // end pronoun identification
 	                    }
 	                } // end infl-type
@@ -667,11 +669,12 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	            // for each lexicon
 	            for (i = 0; i < lex.length; ++i)
 	            {
+	            	var defsFile = defs[i];
 	                // get data from defs file
 	                var defReturn =
 	                    LanguageTool_Greek.lookupLemma(lemmaKey,
 	                                                           null,
-	                                                           defs[i],
+	                                                           defsFile,
 	                                                           stripper);
 	                if (defReturn[1])
 	                    break;
@@ -698,7 +701,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	                              '</div>';
 	
 	                // insert meaning into document
-	                lang_obj.s_logger.debug("adding " + meanElt);
+	                logger.debug("adding " + meanElt);
 	                $(".alph-dict", this).after(meanElt);
 	                
 	                // build dictionary source element
@@ -708,16 +711,16 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	                $(".alph-dict", this).append(srcElt);
 	
 	                // set lemma attributes
-	                lang_obj.s_logger.debug('adding @lemma-lang="grc"');
-	                lang_obj.s_logger.debug('adding @lemma-key="' + defReturn[0] + '"');
-	                lang_obj.s_logger.debug('adding @lemma-lex="' + lex[i] + '"');
+	                logger.debug('adding @lemma-lang="grc"');
+	                logger.debug('adding @lemma-key="' + defReturn[0] + '"');
+	                logger.debug('adding @lemma-lex="' + lex[i] + '"');
 	                $(".alph-dict", this).attr("lemma-lang", "grc");
 	                $(".alph-dict", this).attr("lemma-key", defReturn[0]);
 	                $(".alph-dict", this).attr("lemma-lex", lex[i]);
 	            }
 	            else
 	            {
-	                lang_obj.s_logger.warn("meaning for " +
+	                logger.warn("meaning for " +
 	                              lemmaKey +
 	                              " not found [" + lex.join() + "]");
 	            }
@@ -817,7 +820,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	        a_stripper.setParameter(null, "e_stripVowels", true);
 	        a_stripper.setParameter(null, "e_stripCaps", true);
 	        x = (new DOMParser()).parseFromString("<dummy/>", "text/xml");
-	        key = a_stripper.transformToDocument(x).documentElement.textContent;
+	        key = $.trim(a_stripper.transformToDocument(x).documentElement.textContent);
 	    }
 	    else
 	    {
