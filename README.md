@@ -1,4 +1,4 @@
 alpheios5
 =========
 
-HTML5 Alpheios
+Work in progress on conversion of Alpheios firefox plugins to browser-independent library and bookmarklet. 
