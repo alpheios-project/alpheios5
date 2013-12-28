@@ -34,7 +34,17 @@
  */
 define(['logger','browser-utils'], function(logger,butils) {
 
-	function Datafile(a_url, a_charset, a_callback) {
+	/**
+	 * 
+	 * @param a_url
+	 * @param a_charset
+	 * @param a_return an object with 2 properties: data and index
+	 *                 the newly loaded datafile will be returned as the value of 
+	 *                 a_return.data[a_return.index]
+	 * @param a_callback callback upon successful load
+	 * @returns {Datafile}
+	 */
+	function Datafile(a_url, a_charset, a_return, a_callback) {
 	    // save parameters for possible future reload
 	    this.d_url = a_url;
 	    this.d_charset = a_charset;
@@ -42,7 +52,7 @@ define(['logger','browser-utils'], function(logger,butils) {
 	    this.d_specialFlag = '@';
 	    logger.info("Reading file " + a_url);
 	    var fileRef = this;
-	    var dataRef = a_callback;
+	    var dataRef = a_return;
 	    butils.readFile(
 	    		a_url,
 	    		a_charset,
@@ -54,6 +64,9 @@ define(['logger','browser-utils'], function(logger,butils) {
 	    		        fileRef.d_data += '\n';
 	    			}
 	    		    dataRef.data[dataRef.index] = fileRef;
+	    		    if (a_callback) {
+	    		    	a_callback();
+	    		    }
 				},
 				null,
 				null);

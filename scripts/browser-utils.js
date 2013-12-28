@@ -1,4 +1,4 @@
-define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($,mainstr,logger,prefs,sarissa) {
+define(["jquery","i18n!nls/baseui",'logger','prefs','sarissa/sarissa'], function($,baseui,logger,prefs,sarissa) {
  return {
 	 
 	    /** 
@@ -10,8 +10,8 @@ define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($
 	     */
 	    doConfirm: function(a_window,a_text)
 	    {
-	        var title = mainstr.confirm_dialog;
-	        var text = mainstr[a_text] || a_text;
+	        var title = baseui.confirm_dialog;
+	        var text = baseui[a_text] || a_text;
 	        var result = confirm(a_window,title,text);
 	        return result;
 	    },
@@ -23,8 +23,8 @@ define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($
 	     */
 	    doAlert: function(a_window,a_text)
 	    {
-	        var title = mainstr.general_dialog_title;
-	        var text = mainstr[a_text] || a_text;
+	        var title = baseui.general_dialog_title;
+	        var text = baseui[a_text] || a_text;
 	        alert(a_window,title,text);
 	    },
 	    
@@ -92,8 +92,8 @@ define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($
 	     */
 	    sendFeedback: function(a_window,a_url)
 	    {
-	        var subject = mainstr.feedback_subject;
-	        var body = '\n\n' + mainstr.alph_installed_versions + '\n';
+	        var subject = baseui.feedback_subject;
+	        var body = '\n\n' + baseui.alph_installed_versions + '\n';
 	        var pkgs = this.getAlpheiosPackages();
 	        pkgs.forEach(
 	            function(a_pkg)
@@ -126,7 +126,7 @@ define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($
 		             dataType: 'text',
 		             error: function(req,textStatus,errorThrown)
 		             {
-		                 a_error(textStatus||errorThrown,a_dict_name);
+		                 a_error(textStatus||errorThrown);
 
 		             },
 		             success: a_success,
@@ -137,7 +137,7 @@ define(["jquery","i18n!nls/main",'logger','prefs','sarissa/sarissa'], function($
 	    
 	    getMostRecentWindow: function() {
 	    	// TODO HTML5 if we support state
-	    	window;
+	    	return window;
 	    }
  };
 });

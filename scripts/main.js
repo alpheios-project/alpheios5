@@ -14,13 +14,16 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages'],
 		
 		init_languages: function() {
 			if (languages.getLangList().length == 0) {
+				// TODO get list of languages from ...?
 				languages.addLangTool('greek',new LanguageTool_Greek('greek'));
+				this.show_alpheios_loading();
 			}
 			return languages;
 		},
 		
 		enable: function() {
 			$(document).bind("dblclick", xlate.doMouseMoveOverText);
+			$(document).bind("tap", xlate.doMouseMoveOverText);
 		},
 	    /**
 	     * Get the Alph.LanguageTool instance for the current language.
@@ -56,6 +59,40 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages'],
 	        	lang_tool = languages.getLangTool(lang_key);
 	        }
 	        return lang_tool;
+	    },
+	    
+	    show_alpheios_loading: function() {
+	    	var mainObj = this;
+	    	if ($("#alpheios-loading").get(0)) {
+	    		$("#alpheios-loading").show();
+	    		return;
+	    	}
+	    	var loading_div = 
+	    		'<div id="alpheios-loading" ' + 
+	    		'style="position: absolute; top: 10px; left: 10px; background: white url(http://alpheios.net/bookmarklet/stylesheets/icons/alpheios_16.png) no-repeat;' + 
+	    		' border-color: #3E8D9C #B8B7B5 #B8B7B5 #73CDDE !important; border-style: outset !important; border-width: 2px !important;' +
+	    		' width: 100px; min-height: 50px;'
+	    		+'">' +
+	    		'<div id="alpheios-loading-inner" style="padding-left: 24px; background: 0px 24px transparent url(http://alpheios.net/bookmarklet/stylesheets/loading.gif) no-repeat;">' +
+	    		'Loading Alpheios Resources...' +
+	    		'</div></div>'
+			$("body").prepend(loading_div);
+	    	$("#alpheios-loading").on("ALPHEIOS_LOAD_COMPLETE",
+	    			function(a_event,a_lang){
+	    				$(this).append("<div>" + a_lang + " loaded!</div>");
+	    				var stillLoading = false;
+	    				var langList = languages.getLangList();
+	    				for (var i=0; i<langList.length; i++) {
+	    					var lt = languages.getLangTool(langList[i]);
+	    					if (lt.is_loading()) {
+	    						stillLoading = true;
+	    					}
+	    				}
+	    				if (! stillLoading) {
+	    					$("#alpheios-loading").hide();
+	    				}
+	    			})
 	    }
+
 	};
 });

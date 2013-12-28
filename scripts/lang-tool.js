@@ -32,8 +32,8 @@
  * @param {Properties} a_properties additional properties to set as private members of
  *                                  the object (accessor methods will be dynamically created)
  */
-define(['jquery','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"i18n!nls/main","datafile","module"], 
-		function($,main,logger,prefs,Convert,constants,select,xlate,butils,utils,mainstr,Datafile,module) {
+define(['jquery','strings','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"datafile","module"], 
+		function($,strings,main,logger,prefs,Convert,constants,select,xlate,butils,utils,Datafile,module) {
 	 /**
 	  * @class  LanguageTool is the base class for language-specific
 	  * functionality.
@@ -46,6 +46,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 function LanguageTool(a_language,a_properties)
 	 {
 		 var langObj = this;
+		 this.d_loadEvents = [];
 	     this.d_sourceLanguage = a_language;
 	     this.d_idsFile = Array();
 	     this.d_defsFile = Array();
@@ -193,6 +194,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 */
 	LanguageTool.prototype.loadLexIds = function()
 	{
+		var langObj = this;
 	    this.d_idsFile = Array();
 	    this.d_fullLexCode = this.getModule().config().dictionaries_full.split(',');
 	    var contentUrl = this.getModule().config().contenturl;
@@ -210,11 +212,12 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	                       '-' +
 	                       lexCode +
 	                       "-ids.dat";
-	        var ref = (this.d_idsFile[i] = {});
 	        try
 	        {
+	        	langObj.push_load_event("load_"+lexCode+"_ids");
 	            new Datafile(fileName, "UTF-8",
-	            	{'data': this.d_idsFile,'index':i}
+	            	{'data': this.d_idsFile,'index':i},
+	            	function() { langObj.pop_load_event();}
 	            );
 	            
 	        }
@@ -303,6 +306,26 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	        }
 	    }
 	};
+	
+	/**
+	 * 
+	 */
+	LanguageTool.prototype.push_load_event = function(a_event) {
+		this.d_loadEvents.push(a_event);
+		logger.debug("Push " + this.d_sourceLanguage + " Load Event " + this.d_loadEvents.length.toString() + ":" + a_event );
+	};
+
+	LanguageTool.prototype.pop_load_event = function() {
+		logger.debug("Pop " + this.d_sourceLanguage + " Load Event " + this.d_loadEvents.length.toString() );
+		this.d_loadEvents.pop();
+		if (this.d_loadEvents.length == 0) {
+			$("#alpheios-loading").trigger("ALPHEIOS_LOAD_COMPLETE",this.d_sourceLanguage);
+		}
+	};
+	
+	LanguageTool.prototype.is_loading = function() {
+		return this.d_loadEvents.length > 0;
+	}
 
 	 /**
 	  * source langage for this instance
@@ -464,7 +487,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     }
 	     else
 	     {
-	         logger.error("methods.lexicon invalid or undefined: " + lexicon_method);
+	         logger.debug("methods.lexicon invalid or undefined: " + lexicon_method);
 	     }
 	 }
 
@@ -478,7 +501,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	  */
 	 LanguageTool.prototype.lexiconLookup = function(a_alphtarget,a_onsuccess,a_onerror)
 	 {
-	     a_onerror(mainstr.error_nolexicon.replace("%S",this.d_sourceLanguage));
+	     a_onerror(strings.getString("error_nolexicon",this.d_sourceLanguage));
 	 };
 	 
 	 /**
@@ -827,7 +850,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     var targetURL = this.getModule().config().url_grammar || "";
 	     targetURL = targetURL.replace(/\<ITEM\>/, a_target || "");
 
-	     var grammar_loading_msg = main.getString("alph-loading-grammar");
+	     var grammar_loading_msg = strings.getString("loading_grammar");
 	     var features =
 	     {
 	         screen: this.getModule().config().grammar_window_loc
@@ -945,7 +968,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	             features,
 	             params,
 	             xlate.showLoadingMessage,
-	                 [loading_node||{}, main.getString("alph-loading-misc")]                
+	                 [loading_node||{}, strings.getString("loading_misc")]                
 	         );
 	     }
 	     else
@@ -1005,7 +1028,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         screen: prefs.get("shift_window_loc")
 	     }
 	     // add a callback to hide the loading message
-	     var loading_msg = main.getString("alph-loading-inflect");
+	     var loading_msg = strings.getString("loading_inflect");
 
 	     var loading_node;
 	     if ($(a_node).length >0)
@@ -1321,7 +1344,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     var link = '';
 	     if (this.hasDictionary())
 	     {
-	         var dict_alt_text = main.getString('alph-dictionary-link');
+	         var dict_alt_text = strings.getString("dictionary_link");
 	         link = '<div class="alph-tool-icon alpheios-button alph-dict-link" ' +
 	                'href="#alph-dict" title="' + dict_alt_text + '">' +
 	                '<img src="' + prefs.get('styleurl') + '/icons/wordlist_16.png" ' +
@@ -1598,9 +1621,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 LanguageTool.prototype.getString = function(a_name,a_replace)
 	 {
 
-		 // TODO HTML5 strings
-	     //return main.getLanguageString(this.d_sourceLanguage,a_name,a_replace)
-		 return a_name;
+		 return strings.getLanguageString(this.d_sourceLanguage,a_name,a_replace);
 	 }
 
 	 /**
@@ -1615,7 +1636,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     var str = this.getString(a_name,a_replace);
 	     if (str == '')
 	     {
-	         str = main.getString(a_name,a_replace);
+	         str = strings.getString(a_name,a_replace);
 	     }
 	     return str;
 	 }
@@ -1644,7 +1665,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	    		 false &&
 	         $("#dependency-tree",$(a_node).get(0).ownerDocument).length == 0)
 	     {
-	         var diagram_alt_text = main.getString('alph-diagram-link');
+	         var diagram_alt_text = strings.getString("diagram_link");
 	         $('' +
 	             '<div class="alph-tool-icon alpheios-button alph-diagram-link" ' +
 	             'href="#alpheios-diagram" title="' + diagram_alt_text + '">'+
@@ -1665,7 +1686,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         {   
 	             diagram_func = function(a_e)
 	             {
-	                 xlate.showLoadingMessage([tools_node,main.getString("alph-loading-misc")]);
+	                 xlate.showLoadingMessage([tools_node,strings.getString("loading_misc")]);
 	                 lang_tool[diagram_cmd](a_e,null,$(a_node).get(0),{tbrefs:a_target.getTreebankRef()});
 	                 return false;
 	             }
@@ -1703,7 +1724,8 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         $('#alph-word-tools .alph-dict-link',a_node).click(
 	             function(a_event)
 	             {
-	                 main.broadcastUiEvent(constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
+	            	 //TODO HTML5 events
+	                 //main.broadcastUiEvent(constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
 	             }
 	         );
 	     }
@@ -1711,7 +1733,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     // add the inflection tool, if any
 	     if (this.getFeature('alpheios-inflect') && this.canInflect(a_node))
 	     {
-	         var inflect_alt_text = main.getString('alph-inflect-link');
+	         var inflect_alt_text = strings.getString("inflect_link");
 	         $("#alph-word-tools",a_node).append(
 	             '<div class="alph-tool-icon alpheios-button alph-inflect-link" ' +
 	             'href="#alpheios-inflect" title="' + inflect_alt_text + '">' +
@@ -1723,7 +1745,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         $('#alph-word-tools .alph-inflect-link',a_node).click(
 	             function(a_e)
 	             {
-	                 xlate.showLoadingMessage([tools_node,main.getString("alph-loading-inflect")]);
+	                 xlate.showLoadingMessage([tools_node,strings.getString("loading_inflect")]);
 	                 lang_tool.handleInflections(a_e,a_node);
 	                 return false;
 	             }
@@ -1736,7 +1758,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         // espeak is called through mhttpd and must be enabled only if mhttpd is
 	         && !(prefs.get("morphservice_remote")))
 	     {
-	         var alt_text = main.getString('alph-speech-link');
+	         var alt_text = strings.getString("speech_link");
 	         var link = $(
 	             '<div class="alph-tool-icon alpheios-button alph-speech-link" ' +
 	             'href="#alpheios-speech" title="' + alt_text + '">' +
@@ -1747,7 +1769,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         link.click(
 	             function(a_e)
 	             {
-	                 xlate.showLoadingMessage([tools_node,main.getString("alph-loading-speech")]);
+	                 xlate.showLoadingMessage([tools_node,strings.getString("loading_speech")]);
 	                 lang_tool.handleSpeech(a_e,a_node);
 	                 return false;
 	             }
@@ -1762,8 +1784,8 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	         $("#alpheios-wordlist",$(a_node).get(0).ownerDocument).length == 0)       
 	     {
 	         var normalizedWord = lang_tool.normalizeWord(a_target.getWord());        
-	         var alt_text = main.getString('alph-mywords-link');
-	         var added_msg = main.getString('alph-mywords-added',[normalizedWord]);
+	         var alt_text = strings.getString("mywords_link");
+	         var added_msg = strings.getString("mywords_added",normalizedWord);
 	         var link = $(  
 	             '<div class="alph-tool-icon alpheios-button alph-mywords-link" ' +
 	             'href="#alpheios-mywords" title="' + alt_text + '">' +
@@ -1790,7 +1812,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     if ($("#alph-word-tools",a_node).children().length > 0)
 	     {
 	         if ($("#alph-word-tools",a_node).prepend(
-	             '<span class="alpheios-toolbar-label">' + main.getString("alph-tools")
+	             '<span class="alpheios-toolbar-label">' + strings.getString("tools")
 	             + '</span>')
 	         );
 	     }
@@ -1839,7 +1861,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	             //if ( Alph.BrowserUtils.selectBrowserForDoc(window,a_node.ownerDocument))
 	        	 if (false)
 	             {
-	                 xlate.showLoadingMessage([tools,main.getString("alph-loading-inflect")]);
+	                 xlate.showLoadingMessage([tools,strings.getString("loading_inflect")]);
 	                 lang_tool.handleInflections(a_e,a_node);
 	             }
 	             else if (from_tree)
@@ -1859,8 +1881,9 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	             //if (Alph.BrowserUtils.selectBrowserForDoc(window,$(a_node).get(0).ownerDocument))
 	        	 if (false)
 	             {
-	                 main.broadcastUiEvent(
-	                     constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
+	        		 // TODO HTML5 events
+	                 //main.broadcastUiEvent(
+	                 //    constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
 	             }
 	             else if (from_tree)
 	             {
@@ -1880,7 +1903,7 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	             //if ( Alph.BrowserUtils.selectBrowserForDoc(window,$(a_node).get(0).ownerDocument))
 	        	 if (false)
 	             {                
-	                 xlate.showLoadingMessage([tools,main.getString("alph-loading-speech")]);
+	                 xlate.showLoadingMessage([tools,strings.getString("loading_speech")]);
 	                 lang_tool.handleSpeech(a_e,a_node);
 	             }
 	             else if (from_tree)
@@ -1905,10 +1928,10 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	 */
 	 LanguageTool.prototype.addInflHelp = function(a_node, a_target)
 	 {
-	     var form = main.getString("alph-morph-form");
-	     var stem = main.getString("alph-morph-stem");
-	     var suffix = main.getString("alph-morph-suffix");
-	     var prefix = main.getString("alph-morph-prefix");
+	     var form = strings.getString("morph_form");
+	     var stem = strings.getString("morph_stem");
+	     var suffix = strings.getString("morph_suffix");
+	     var prefix = strings.getString("morph_prefix");
 	     var icon_url = prefs.get('styleurl') + '/icons/';
 	     $(".alph-term",a_node).each(
 	         function()
@@ -1959,12 +1982,12 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	                             if ($(this).nextAll(".alph-"+title[1]).length > 0)
 	                             {
 	                                 name =
-	                                     main.getString("alph-morph-" +title[1] + '-plural');
+	                                     strings.getString("morph_" +title[1] + '-plural');
 	                             }
 	                             else
 	                             {
 	                                 name =
-	                                     main.getString("alph-morph-" +title[1]);
+	                                     strings.getString("alph-morph-" +title[1]);
 	                             }
 	                             // only display attributes for which we have explicitly
 	                             // defined strings, and which we haven't already added
@@ -2196,7 +2219,8 @@ define(['jquery','main','logger','prefs','convert','constants','src-select','xla
 	     );
 	     if (updated)
 	     {
-	         main.broadcastUiEvent(constants.EVENTS.VOCAB_UPDATE, { src_node: $(a_node).get(0) });        
+	    	 // TODO HTML5 events
+	         //main.broadcastUiEvent(constants.EVENTS.VOCAB_UPDATE, { src_node: $(a_node).get(0) });        
 	     }
 	 };
 

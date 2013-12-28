@@ -71,7 +71,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	        langObj.d_defsFile[i] = null;
 	        try
 	        {
-		        logger.info("Loading " + lex + " at " + i);
+		        this.push_load_event("load_"+ lex);
 	            var tmp = new Datafile(
 	                        this.getPref('contenturl') + '/dictionaries/' +
 	                        lex +
@@ -80,7 +80,8 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	                        "-defs.dat",
 	                        "UTF-8",
 	                        { 'index': i,
-	                          'data': langObj.d_defsFile });
+	                          'data': langObj.d_defsFile },
+	                        function() { langObj.pop_load_event();})
 	        }
 	        catch (ex)
 	        {
@@ -103,9 +104,11 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	    try
 	    {
 	    	var thisObj = this;
+	    	this.push_load_event("loadStripper");
 	        butils.getXsltProcessor('alpheios-unistrip.xsl',null,
 	        	function(a_processor) {
 	        		thisObj.d_stripper = a_processor;
+	        		thisObj.pop_load_event();
 	        	});
 	    }
 	    catch (ex)
@@ -706,7 +709,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	                
 	                // build dictionary source element
 	                var srcElt = '<div class="alph-dict-source">' +
-	                    lang_obj.getString('dict.' + lex[i] + '.copyright') +
+	                    lang_obj.getString('dict_' + lex[i] + '_copyright') +
 	                    '</div>';
 	                $(".alph-dict", this).append(srcElt);
 	
@@ -726,7 +729,7 @@ define(['jquery','lang-tool','convert-greek','lang-tool-factory','prefs','logger
 	            }
 	        }
 	    );
-	    var copyright = this.getString('popup.credits');
+	    var copyright = this.getString('popup_credits');
 	    $('#alph-morph-credits',a_node).html(copyright);
 	    
 	};

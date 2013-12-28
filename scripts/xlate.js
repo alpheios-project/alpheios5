@@ -36,7 +36,7 @@
 /**
  * @class Alph.Xlate contains the generic popup functionality
  */
-define(['require','jquery','logger','prefs','browser-utils','i18n!nls/main','utils'], function(require,$,logger,prefs,butils,mainstr,utils) {
+define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','utils'], function(require,$,logger,prefs,butils,baseui,utils) {
 	var xlate = {
 
         setXsltProcessor: function(a_proc) {
@@ -493,7 +493,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/main','uti
 	
 	        /* reset the contents of the popup */
 	        var xlate_loading = 
-	        	mainstr.loading_translation.replace("%S",a_alphtarget.getWord());
+	        	baseui.loading_translation.replace("%S",a_alphtarget.getWord());
 	        $("#alph-text",popup).remove();
 	        $("#alph-window",topdoc).get(0).removeAttribute("alpheios-pending");
 	        $("#alph-window",topdoc).append(
@@ -655,7 +655,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/main','uti
 	     */
 	    translationError: function (a_msg,a_doc_array)
 	    {
-	        var err_msg = mainstr.loading_error.replace("%S",a_msg);
+	        var err_msg = baseui.loading_error.replace("%S",a_msg);
 	        logger.error("Query Response (Error): " + err_msg);
 	        //if (Alph.Main.useLocalDaemon() &&
 	        //    typeof Alph.Main.getCurrentBrowser()

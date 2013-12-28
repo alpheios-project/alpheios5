@@ -34,14 +34,22 @@ define(['browser-utils','logger','convert','sarissa/sarissa'], function(butils,l
 	    Convert.call(this);
 	    /* initialize the XSLT converters */
 	    var thisObj = this;
+	    var callback = function(){};
+	    if (typeof arguments.callee.push_load_event === 'function') {
+	    	arguments.callee.push_load_event("d_u2bConverter");
+	    	arguments.callee.push_load_event("d_uNormalizer");
+	    	callback = arguments.callee.pop_load_event;
+	    }
 	    butils.getXsltProcessor('alpheios-uni2betacode.xsl',null,
 	    		function(a_processor) {
 	        		thisObj.d_u2bConverter = a_processor;	
+	        		callback();
 	        	}
 	    );
 	    butils.getXsltProcessor('alpheios-normalize-greek.xsl',null,
 	    		function(a_processor) {
 	        		thisObj.d_uNormalizer = a_processor;	
+	        		callback();
 	        	}
 	    );	
 	};

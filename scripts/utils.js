@@ -39,9 +39,6 @@
 define(['jquery','browser-utils','logger','require'], 
 		function($,butils,logger,require) {
 
-	//TODO HTML5 datafile implementation
-    //Components.utils.import("resource://alpheios/alpheios-datafile.jsm",Alph);
-
 	return {
 
 	    ALPHEIOS_URLS:
