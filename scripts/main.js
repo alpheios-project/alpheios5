@@ -1,4 +1,4 @@
-define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','state','constants'], 
+define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','state','constants','jquery.tap'], 
 		function($,butils,xlate,util,LanguageTool_greek,languages,state,constants) {
 	return {
         
@@ -621,11 +621,8 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        // first, remove the old one, if any
 	        var old_trigger = this.removeXlateTrigger(a_bro);
 	        
-	        //a_bro.addEventListener(a_trigger, this.doXlateText, false);
-			$(document).bind(a_trigger, this.doXlateText);
-			// TODO MOBILE
-			//$(document).bind("tap", xlate.doMouseMoveOverText);
-
+	        a_bro.addEventListener(a_trigger, this.doXlateText, false);
+			
 	        this.getStateObj(a_bro).setVar("xlate_trigger",a_trigger);
 	        // TODO HTML BROADCAST State
 	        if (a_broadcast)

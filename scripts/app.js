@@ -10,7 +10,7 @@ require.config({
     			 "remote": true,
     			 "remote_url" : "http://alpheios.net/perl"
     		 },
-    		 "popuptrigger" : 'dblclick',
+    		 "popuptrigger" : 'tap', //jquery tap plugin 
     		 "keys_toggle" : 'a',
     		 "keymodifiers_toggle" : 'alt',
     		 "grammar_window_loc": "bottomright",

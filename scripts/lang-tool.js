@@ -264,7 +264,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	        codeList = null;
 	    }
 	    var codes = (codeList ? codeList.split(',') : Array());
-	    var defaultBase = "dictionary_full_search.";
+	    var defaultBase = "dictionary_full_search_";
 	    for (var i = 0; i < codes.length; ++i)
 	    {
 	        var code = codes[i];
@@ -1424,7 +1424,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	                 a_lemma[3] = lemma_id[1];
 	                 if (a_lemma[0])
 	                 {
-	                     lang_obj.s_logger.debug("found id " + a_lemma[0] +
+	                     logger.debug("found id " + a_lemma[0] +
 	                                   " for lemma " + a_lemma[1] +
 	                                   " in " + a_lemma[3]);
 	                 }
@@ -1524,8 +1524,8 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 
 	                 // call dictionary
 	                 // but only use real completion for last item
-	                 lang_obj.s_logger.debug("Calling dictionary at " + url);
-	                 lang_obj.doDefaultDictionaryLookup(
+	                 logger.debug("Calling dictionary at " + url);
+	                 lang_obj.doSecondaryDictionaryLookup(
 	                     code,
 	                     url,
 	                     on_success,
@@ -1588,6 +1588,44 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         }
 	     );
 	 };
+	 
+	 /**
+	  * Helper method which calls the dictionary webservice
+	  * @param {String} a_dict_name the dictionary name
+	  * @param {String} a_url the url to GET
+	  * @param {function} a_callback callback upon successful lookup
+	  * @param {function} a_error callback upon error
+	  * @param {function} a_complete callback upon completion
+	  */
+	 LanguageTool.prototype.doSecondaryDictionaryLookup =
+	     function(a_dict_name,a_url,a_success,a_error,a_complete)
+	 {
+         var features =
+	     {
+	         screen: this.getModule().config().grammar_window_loc
+	     };
+         var loading_node = $("#alph-word-tools").get(0);
+         var loading_msg = strings.getString("loading_dictionary");
+         var params = $.extend(
+    	         {
+    	             callback: loading_node ? 
+    	                       function() { xlate.hideLoadingMessage(loading_node.ownerDocument) }
+    	                       : function() {},
+    	             lang_tool: this
+    	         },
+    	         {}
+    	     );
+         xlate.openSecondaryWindow(
+        		 "alph-dictionary-window",
+        		 a_url,
+        		 features,
+        		 params,
+        		 null,
+        		 null,
+        		 xlate.hideLoadingMessage);
+	 };
+	 
+	 
 
 	 /**
 	  * language-specific method to handle runtime changes to language-specific
@@ -1726,6 +1764,78 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             {
 	            	 //TODO HTML5 events
 	                 //main.broadcastUiEvent(constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
+	            	// get a callback to the current dictionary
+	         	    var dictionary_callback = lang_tool.getDictionaryCallback();
+	         	    
+	         	    var src_doc = $(a_node).get(0).ownerDocument; 
+	         	    
+	         	    var alph_window = $("#alph-window",src_doc).get(0);
+
+	         	    // remove any prior dictionary entries or loading messages
+	         	    // from the lexicon display
+	         	    $(".loading",alph_window).remove();
+	         	    $(".alph-dict-block",alph_window).remove();
+
+
+	         	    // pull the new lemmas out of the alph-window lexicon element
+	         	    var lemmas = [];
+	         	    $(".alph-dict",alph_window).each(
+	         	        function()
+	         	        {
+	         	            var lemma = this.getAttribute("lemma-key");
+	         	            var lemma_id = this.getAttribute("lemma-id");
+	         	            var lemma_lang = this.getAttribute("lemma-lang");
+	         	            var lemma_lex = this.getAttribute("lemma-lex");
+	         	            if (lemma || lemma_id)
+	         	            {
+	         	                // lemma may have multiple values, so split
+	         	                var lemset = lemma.split(' ');
+	         	                for (var i in lemset)
+	         	                    lemmas.push([lemma_id, lemset[i], lemma_lang, lemma_lex]);
+	         	            }
+	         	        }
+	         	    );
+
+	         	    // don't do anything other than updating the state
+	         	    // if we don't have any lemmas
+	         	    if (lemmas.length > 0)
+	         	    {
+	         	        if (typeof dictionary_callback != 'function')
+	         	        {
+	         	            // if we don't have any callback defined for this language,
+	         	            // just display the short definition in the alph-window
+	         	            $(alph_window).addClass("default-dict-display");
+	         	            $(alph_window).removeClass("full-dict-display");
+	         	            // remove any dictionary-specific stylesheets and
+	         	            // remove the dictionary name from the state
+	         	            if (panel_state.dicts[bro_id] != null)
+	         	            {
+	         	                language_tool.removeStyleSheet(dict_doc,
+	         	                    'alpheios-dict-' + panel_state.dicts[bro_id]);
+	         	                panel_state.dicts[bro_id] = null;
+	         	            }
+	         	            logger.warn("No dictionary defined " + dictionary_callback);
+	         	        }
+	         	        else
+	         	        {
+	         	            // we have a dictionary callback method, so pass the lemmas
+	         	            // to the callback to get the dictionary html.
+	         	            // Also pass references to callback methods which
+	         	            // will populate the panel obj with the dictionary output
+
+	         	            // but first add a loading message
+	         	            var lemma_list = $.map(lemmas,function(a){return a[1]}).join(', ');
+	         	            var request_id = (new Date()).getTime()
+	         	                + encodeURIComponent(lemma_list)
+	         	            $("#alph-window").append(
+	         	                    '<div id="alph-secondary-loading" class="loading" ' +
+	         	                        'alph-request-id="' + request_id + '">'
+	         	                    + strings.getString("searching_dictionary",[lemma_list])
+	         	                    + "</div>");
+	         	            dictionary_callback(lemmas,function(){},function(){},function(){})
+
+	         	        }
+	         	    }
 	             }
 	         );
 	     }

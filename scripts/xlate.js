@@ -588,6 +588,75 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        // keep the last element in the state, so that we can find
 	        // the popup (and stylesheets) again
 	    },
+	    
+	    /**
+	      * handle to initiate drag action for popup
+	      * @param {Event} a_event the mousedown event
+	      *  ('this' is the object the mouse is over)
+	      */
+	     dragPopup: function(a_e)
+	     {
+	        var handle_offset = $(this).offset();;
+	        var data =
+	            { start_x: a_e.pageX,
+	              start_y: a_e.pageY,
+	              handle_x: handle_offset.left - a_e.pageX,
+	              handle_y: handle_offset.top - a_e.pageY,
+	            };
+	        $(this).parents("body").eq(0).bind(
+	            'mouseup.alpheiosdrag',
+	            data,
+	            xlate.dropPopup);
+
+	        $(this).parents("body").eq(0).bind(
+	            'mousemove.alpheiosdrag',
+	            data,
+	            xlate.movePopup);
+	        return false;
+	    },
+
+	    /**
+	     * mousemove handler for dragging the popup
+	     * @param {Event} a_event the mousemove event
+	     * ('this' is the object the mouse is moving over)
+	     */
+	    movePopup: function(a_e)
+	    {
+	        // adjust the coordinates of the event
+	        // so that the mouse stays in the location
+	        // of the original mouse down event
+	        a_e.pageX = a_e.pageX + a_e.data.handle_x;
+	        a_e.pageY = a_e.pageY + a_e.data.handle_y;
+	        var x_m = a_e.pageX - a_e.data.start_x;
+	        var y_m = a_e.pageY - a_e.data.start_y;
+	        $("#alph-window",this.ownerDocument).get(0).style.left =
+	            (a_e.data.start_x + x_m) + 'px';
+	        $("#alph-window",this.ownerDocument).get(0).style.top =
+	            (a_e.data.start_y + y_m) + 'px';
+	        return false;
+	    },
+
+	    /**
+	     * mouseup handler for dropping the popup
+	     * @param {Event} a_event the mouseup event
+	     * ('this' is the object the mouse is over)
+	     */
+	    dropPopup: function(a_e){
+	        $(this).unbind('.alpheiosdrag');
+	        $(this).parents().unbind('.alpheiosdrag');
+	        // adjust the coordinates of the event
+	        // so that the mouse stays in the location
+	        // of the original mouse down event
+	        a_e.pageX = a_e.pageX + a_e.data.handle_x;
+	        a_e.pageY = a_e.pageY + a_e.data.handle_y;
+	        var x_m = a_e.pageX - a_e.data.start_x;
+	        var y_m = a_e.pageY - a_e.data.start_y;
+	        $("#alph-window",this.ownerDocument).get(0).style.left =
+	            (a_e.data.start_x + x_m) + 'px';
+	        $("#alph-window",this.ownerDocument).get(0).style.top =
+	            (a_e.data.start_y + y_m) + 'px';
+	    },
+	    
 	    /**
 	     * reposition the popup to be in the viewport
 	     * @param {Element} a_popup the popup element
@@ -1274,6 +1343,290 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	            Alph.Main.s_logger.error("no default view");
 	        }
 	     },
+	     
+	     /**
+	      * Opens or replaces a popup window and adds a reference to it to the
+	      * alpheios state variable on the current browser.
+	      *  @param {String} a_name the name of the new window
+	      *  @param {String} a_url the url to load in the window
+	      *  @param {Properties} a_feature optional feature properties for the window
+	      *  @param {Array} a_window_args optional array of arguments to pass
+	      *                                to the new window
+	      *  @param {function} a_start_call optional callback to be executed
+	      *                                 just before opening the window
+	      *  @param {Array} a_start_args optional array of arguments to pass to the
+	      *                              a_start_call callback
+	      *  @param {function} a_load_call optional callback to be installed as an
+	      *                                onload event handler in the new window
+	      *  @returns the window
+	      */
+	     openSecondaryWindow: function(
+	         a_name,
+	         a_url,
+	         a_features,
+	         a_window_args,
+	         a_start_call,
+	         a_start_args,
+	         a_load_call)
+	     {
+
+	         // the target window can call the passed in function
+	         // to remove the loading message
+
+	         // it doesn't seem possible to reset the window.arguments
+	         // so if arguments are being passed to the new window,
+	         // just proceed as if opening a new window
+	    	 // TODO HTML5 window state
+	         //var windows =
+	         //    Alph.Main.getStateObj(Alph.Main.getCurrentBrowser())
+	         //    .getVar("windows");
+
+	         //var a_window = windows[a_name];
+	         var a_window = null;
+	         var update_args  = false;
+	         var open_new_window = true;
+	         try {
+	             // if the window exists already, is open, has the same location
+	             // and an update_args_callback property has been added to
+	             // the window arguments, just call that with the new arguments
+	             // rather than reloading the window
+	             update_args = ( 
+	                 typeof a_window != "undefined" &&
+	                 a_window != null &&
+	                 ! a_window.closed &&
+	                 a_window.location.href == a_url &&
+	                 a_window.arguments &&
+	                 a_window.arguments[0].update_args_callback != null); 
+	         }
+	         catch (a_e)
+	         {
+	             logger.error("Error checking window status for " + a_name + " : " + a_e);
+	         }
+	         try {
+	             open_new_window = (typeof a_window == "undefined" || 
+	                                 a_window == null || 
+	                                 a_window.closed || 
+	                                 a_window_args);
+	         }
+	         catch (a_e)
+	         {
+	             logger.error("Error checking open window status for " + a_name + " : " + a_e);
+	         }
+
+	         // if the window exists already, is open, has the same location
+	         // and an update_args_callback property has been added to
+	         // the window arguments, just call that with the new arguments
+	         // rather than reloading the window
+	         if (update_args)
+	         {
+	             logger.debug("Calling update_args_callback for window " + a_name);
+	             a_window.arguments[0].updateArgsCallback(a_window_args);
+	         }
+	         // if the window doesn't exist, or is closed, or has arguments
+	         // and didn't meet the prior condition,
+	         // reload it with the new arguments
+	         else if (open_new_window)
+	         {
+
+	             logger.debug("Opening new window named: " + a_name);
+	             // add a loading message to notify the user we're loading
+	             // the grammar - really this should come from a
+	             // stringbundle if we're going to keep it
+	             if (a_start_call != null) {
+	                 a_start_call(a_start_args);
+	             }
+
+	             // set the feature string for the new window
+	             // adding in any overrides from the arguments
+	             // note that the chrome feature seems to impact
+	             // the behavior of javascript installed in the chrome
+	             // of the newly opened window
+	             var features =
+	             {
+	                 chrome: "no", // TODO HTML5 chrome equivalent?
+	                 dialog: "no",
+	                 resizable: "yes",
+	                 width: "800",
+	                 height: "600",
+	                 scrollbars: "yes"
+	             };
+
+	             for (var prop in a_features)
+	             {
+	                 // calculate actual screenX,screenY
+	                 if (prop == 'screen') {
+	                     var target_width;
+	                     var target_height;
+	                     if (a_features.width != null)
+	                     {
+	                         target_width = a_features.width;
+	                     }
+	                     else
+	                     {
+	                         target_width = features.width;
+	                     }
+	                     if (a_features.height != null)
+	                     {
+	                         target_height = a_features.height;
+	                     }
+	                     else
+	                     {
+	                         target_height = features.height;
+	                     }
+
+	                     var right_x = window.outerWidth - target_width;
+	                     if (right_x < 0)
+	                     {
+	                         right_x = window.screenX;
+	                     }
+	                     var bottom_y = window.outerHeight - target_height;
+	                     if ( bottom_y < 0 ){
+	                         bottom_y = window.screenY;
+	                     }
+	                     logger.debug("Screen: " + a_features[prop]);
+	                     switch(a_features[prop])
+	                     {
+	                         case "topright":
+	                         {
+	                             features.screenY = window.screenY;
+	                             features.screenX = right_x;
+	                             break;
+	                         }
+	                         case "bottomleft":
+	                         {
+	                             features.screenX = window.screenX;
+	                             features.screenY = bottom_y;
+	                             break;
+	                         }
+	                         case "bottomright":
+	                         {
+	                             features.screenX = right_x;
+	                             features.screenY = bottom_y;
+	                             break;
+	                         }
+	                         default: //"topleft"
+	                         {
+	                             features.screenX = window.screenX;
+	                             features.screenY = window.screenY;
+	                         }
+	                     }
+	                 }
+	                 else
+	                 {
+	                     features[prop] = a_features[prop];
+	                 }
+	             };
+
+	             var feature_list = [];
+	             for (var prop in features)
+	             {
+	                 feature_list.push(
+	                     prop + "=" + features[prop]);
+	             }
+
+	             a_window = window.open(
+	                 a_url,
+	                 a_name,
+	                 feature_list.join(","),
+	                 a_window_args
+	                 );
+
+	             // install the onload handler in the new window
+	             if (a_load_call != null)
+	             {
+	            	 // TODO HTML5 HACK to hide loading message until
+	            	 // panels and window state are managed
+	            	     //a_window.addEventListener(
+		                 //            "load",
+		                 //            a_load_call,
+		                 //            false);
+	            	 	 a_load_call();
+	             }
+	         }
+	         // the target window is already open, replace the location
+	         else
+	         {
+	             var current_location = a_window.location;
+
+	             var match_result =
+	                 a_url.match(/^(\w+):\/\/([^\/]+)(\/\S*?)(#.+)?$/);
+	             // if a match, full string is in match_result[0]
+	             var target_host = match_result[2];
+	             var target_path = match_result[3];
+	             var target_hash = match_result[4];
+
+	             // if the target url is the same as the current url
+	             // and both specify a named location in the same file,
+	             // replace just the hash part of the location to prevent
+	             // reloading the window with the new location
+	             if (target_hash != null &&
+	                 current_location.host == target_host &&
+	                 current_location.pathname == target_path &&
+	                 a_window.location.hash != null &&
+	                 a_window.location.hash != ''
+	                 )
+	             {
+	                 logger.debug("Replacing location hash with " + target_hash);
+	                 a_window.location.hash = target_hash;
+	             }
+	             // otherwise, just replace the location and allow the window
+	             // to reload. It should come into focus before replacing the
+	             // location, so adding loading message to the source window
+	             // shouldn't be necessary
+	             else
+	             {
+	                 logger.debug("Replacing location with " + a_url);
+	                 a_window.location = a_url;
+
+	             }
+
+	         }
+	         // now focus the window
+	         a_window.focus();
+	         logger.info("Secondary window should have focus at "+ a_url);
+	         // TODO HTML5 window state
+	         //windows[a_name] = a_window;
+	         return a_window;
+	     },
+
+	     /**
+	      * Callback to hide the loading message in the popup.
+	      * @param {Document} document which contains the loading message
+	      */
+	     hideLoadingMessage: function(a_doc)
+	     {
+
+	         var topdoc = a_doc || xlate.getLastDoc();
+	         try {
+	             // we can't use the event target, because the event is
+	             // in the 2ndary window not the one showing the message
+	             $("#alph-secondary-loading",topdoc).remove();
+
+	             // also check the morphology panel (dictionary window doesn't 
+	             // contain any links to new windows)
+	             // TODO HTML5 panels
+	             //Alph.Main.d_panels['alph-morph-panel'].getCurrentDoc().forEach
+	             //(
+	             //    function(a_doc)
+	             //    {
+	             //        Alph.$("#alph-secondary-loading",a_doc).remove();
+	             //    }
+	             //);
+	             
+	             // TODO HTML5 Query
+	             // and the query window
+	             //var qdoc = Alph.Interactive.getQueryDoc();
+	             //if (qdoc)
+	             //{
+	              //       Alph.$("#alph-secondary-loading",qdoc).remove();
+	             //}
+	         }
+	         catch(e)
+	         {
+	             logger.error("Error hiding loading message: " + e);
+	         }
+	     },
+
 	     /**
 	      * Remove the alph-window element and related css from the
 	      * browser content document
@@ -1327,6 +1680,34 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	         //main.broadcastUiEvent(constants.EVENTS.REMOVE_POPUP);
 
 	      },
+	      
+	      /**
+	       * Determines if the popup is currently being displayed,
+	       * based upon the lastElem object in the alpheios state variable
+	       * @returns true if it was found and visible, otherwise false
+	       * @type Boolean
+	       */
+	      popupVisible: function()
+	      {
+	         var topdoc = this.getLastDoc();
+	         return $("#alph-window",topdoc).is(':visible');
+	      },
+	      
+	      /**
+	       * Show a loading message in the popup.
+	       * @param {Array} a_args an arry containing
+	       *                [0] - the Node at which to show the message
+	       *                [1] - the message
+	       */
+	      showLoadingMessage: function(a_args)
+	      {
+	          if ($("#alph-secondary-loading",a_args[0]).length == 0 )
+	          {
+	              $(a_args[0]).append(
+	                  '<div id="alph-secondary-loading">' + a_args[1] + '</div>');
+	          }
+	      }
+
 
 	};
 	return (xlate);
