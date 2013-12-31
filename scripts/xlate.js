@@ -1273,7 +1273,61 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	            // out why and fix, rather than just logging it.
 	            Alph.Main.s_logger.error("no default view");
 	        }
-	     }
+	     },
+	     /**
+	      * Remove the alph-window element and related css from the
+	      * browser content document
+	      * @param a_bro the browser
+	      * @param a_lang_tool the LanguageTool which last populated the alpheios
+	      *                    elements in the browser (optional - if not supplied
+	      *                    the current tool will be used)
+	      */
+	      removePopup: function(a_bro,a_lang_tool)
+	      {
+	         var last_doc = this.getLastDoc();
+	         // remove the main alpheios stylesheet
+	         $(".alpheios-css",last_doc).remove();
+	         var main = require('main');
+             
+	         if (typeof a_lang_tool == "undefined")
+	         {
+	        	 a_lang_tool = main.getLanguageTool();
+	         }
+	         if (a_lang_tool)
+	         {
+	             a_lang_tool.removeStyleSheet(last_doc);
+	         }
+	         // remove the alpheios window element
+	         $("#alph-window",last_doc).remove();
+
+	         // TODO HTML5 panels
+	         // also clear the morphology and dictionary panels
+	         //main.d_panels['alph-morph-panel'].getCurrentDoc().forEach(
+	         //    function(a_doc)
+	         //    {
+	         //        $("#alph-window",a_doc).html("");
+	         //        if (a_lang_tool)
+	         //        {
+	         //            a_lang_tool.removeStyleSheet(a_doc);
+	         //        }            
+	         //    }
+	         //);
+	         //main.d_panels['alph-dict-panel'].getCurrentDoc().forEach(
+	         //    function(a_doc)
+	         //    {
+	         //        $("#alph-window",a_doc).html("");
+	         //        if (a_lang_tool)
+	         //        {
+	         //            a_lang_tool.removeStyleSheet(a_doc);
+	         //        } 
+	         //    }
+	         //);
+
+	         // TODO HTML5 events
+	         //main.broadcastUiEvent(constants.EVENTS.REMOVE_POPUP);
+
+	      },
+
 	};
 	return (xlate);
 });
