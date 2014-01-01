@@ -32,7 +32,7 @@
  * @param {Properties} a_properties additional properties to set as private members of
  *                                  the object (accessor methods will be dynamically created)
  */
-define(['jquery','strings','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"datafile","module"], 
+define(['jquery','strings','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"datafile","module","jquery.tap"], 
 		function($,strings,main,logger,prefs,Convert,constants,select,xlate,butils,utils,Datafile,module) {
 	 /**
 	  * @class  LanguageTool is the base class for language-specific
@@ -820,7 +820,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     {
 	         if (links.hasOwnProperty(link_name))
 	         {
-	             $(".alph-entry ." + link_name,a_doc).bind('click',link_name,
+	             $(".alph-entry ." + link_name,a_doc).bind('tap',link_name,
 	                 function(a_e)
 	                 {
 	                       // build target inside grammar
@@ -1740,7 +1740,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	                 return false;
 	             }
 	         }
-	         $('#alph-word-tools .alph-diagram-link',a_node).click(diagram_func);
+	         $('#alph-word-tools .alph-diagram-link',a_node).tap(diagram_func);
 	     }
 	     // add language-specific dictionary link, if any
 	     var lemmas = [];
@@ -1759,7 +1759,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         $("#alph-word-tools",a_node).append(this.getDictionaryLink());
 	         // TODO the dictionary handler should be defined in Alph.Dict
 	         // rather than here. also doesn't work from a detached window yet.
-	         $('#alph-word-tools .alph-dict-link',a_node).click(
+	         $('#alph-word-tools .alph-dict-link',a_node).bind('tap',
 	             function(a_event)
 	             {
 	            	 //TODO HTML5 events
@@ -1852,7 +1852,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             '<div class="alpheios-icon-label">' + inflect_alt_text + '</div></div>'
 	         );
 
-	         $('#alph-word-tools .alph-inflect-link',a_node).click(
+	         $('#alph-word-tools .alph-inflect-link',a_node).bind('tap',
 	             function(a_e)
 	             {
 	                 xlate.showLoadingMessage([tools_node,strings.getString("loading_inflect")]);
@@ -1876,7 +1876,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             'alt="' + alt_text + '"/>' + 
 	             '<div class="alpheios-icon-label">' + alt_text + '</div></div>',a_node
 	         );
-	         link.click(
+	         link.bind('tap',
 	             function(a_e)
 	             {
 	                 xlate.showLoadingMessage([tools_node,strings.getString("loading_speech")]);
@@ -1903,7 +1903,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             'alt="' + alt_text + '"/>' + 
 	             '<div class="alpheios-icon-label">' + alt_text + '</div></div>',a_node
 	         );
-	         $(link).click(
+	         $(link).bind('tap',
 	             function(a_e)
 	             {
 	                 if (butils.doConfirm(window,added_msg))
@@ -1945,7 +1945,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     // TODO word should be automatically identified as learned or not according to user's answer
 	     $('.alph-mywords-link',tools).remove();
 	     var from_tree = $("#dependency-tree",$(a_node).get(0).ownerDocument).length > 0;
-	     $('.alph-diagram-link',tools).click(
+	     $('.alph-diagram-link',tools).bind('tap',
 	         function(a_e)
 	         {
 	        	 // TODO HTML5 browser tab functionality
@@ -1964,7 +1964,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     );
 	     // if the node is from the dependency tree diagram, the call to selectBrowserForDoc
 	     // will fail, in which case we should just try to pass the click back to the originating node     
-	     $('.alph-inflect-link',tools).click(
+	     $('.alph-inflect-link',tools).bind,('tap',
 	         function(a_e)
 	         {
 	        	 // TODO HTML5 browser tab functionality
@@ -1984,7 +1984,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             return false;
 	         }
 	     );
-	     $('.alph-dict-link',tools).click(
+	     $('.alph-dict-link',tools).bind('tap',
 	         function(a_event)
 	         {
 	        	 // TODO HTML5 browser tab functionality
@@ -2006,7 +2006,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             return false;
 	         }
 	     );
-	     $(".alph-speech-link",tools).click(
+	     $(".alph-speech-link",tools).bind('tap',
 	         function(a_e)
 	         {
 	        	 // TODO HTML5 browser tab functionality

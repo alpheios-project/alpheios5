@@ -114,7 +114,7 @@ require.config({
 			"url_lexicon": 'http://alpheios.net/perl',
 			"url_lexicon_request": "/greek?word=<WORD>",
 			"url_lexicon_timeout":"5000",
-			"popuptrigger":'dblclick',
+			"popuptrigger":'tap',
 			"url_grammar":"chrome://alpheios-greek/content/alph-greek-grammar.xul",
 			"grammar_hotlinks":"alph-decl,alph-pofs,alph-mood,alph-case,alph-voice,alph-pers,alph-tense,alph-pofs-extra",
 			"features_alpheios-grammar":"true",

@@ -621,12 +621,13 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        // first, remove the old one, if any
 	        var old_trigger = this.removeXlateTrigger(a_bro);
 	        
-	        a_bro.addEventListener(a_trigger, this.doXlateText, false);
+	        $(document).bind(a_trigger, this.doXlateText);
 			
 	        this.getStateObj(a_bro).setVar("xlate_trigger",a_trigger);
-	        // TODO HTML BROADCAST State
+	        // TODO HTML5 BROADCAST State
 	        if (a_broadcast)
 	        {
+	        	// TODO HTML5 toolbar UI 
 	            //this.setTbHints();
 	        }
 	        // update the trigger in any secondary windows opened by this browser
