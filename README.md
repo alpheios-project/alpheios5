@@ -20,6 +20,7 @@ This repository contains a prototype conversion of the Alpheios Language Tool Fi
 * Used the [Sarissa](http://dev.abiss.gr/sarissa/) library for cross-browser XSLT handling (this may or may not be necessary - it isn't working fully now on Firefox so this needs futher investigation).
 * Made the Alpheios state object an adapter to the HTML5 sessionStorage API  - only simple string values are currently supported (therefore window and panel state management is disabled for now)
 * app.js acts as the main controller. It calls main.js:init to automatically enable the tools for Greek (language selection is currently hard-coded) upon load.
+* I've just deployed the supporting non-javascript resources (i.e. css stylesheets, icons and xslt) manually on the alpheios.net server for now by copying them from the sourceforge repo. These all still need to be ported to the new code structure.
 
 ### Outstanding issues/roadmap
 * Module dependencies need to be cleaned up further and made more concise
@@ -37,4 +38,5 @@ This repository contains a prototype conversion of the Alpheios Language Tool Fi
 * Enable touch events instead of tap as alternative to mousemove event for triggering lookup on mobile devices (i.e. for character-based tokens instead of space-separated)
 * Sort out cross-browser XSLT issues and verify whether Sarissa is really needed
 * Figure out how to enable bookmarklet under Chrome mobile
+* Port CSS, icons and XSLT stylesheets from Sourceforge repo and create build and deploy scripts
 * Investigate browser-plugin options as wrapper to the base code (to provide enhanced functionality across pages as alternative to bookmarklet)
