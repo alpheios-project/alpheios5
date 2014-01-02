@@ -316,7 +316,7 @@ define(['jquery','browser-utils','logger','require'],
 	                        window.arguments[0] : {};
 	        if (params.e_srcDoc  &&
 	            params.e_proxiedHandler &&
-	            // TODO HTML5 browser feature
+	            // A5 TODO implement browser state across windows
 	            //Alph.BrowserUtils.selectBrowserForDoc(window.opener,params.e_srcDoc)
 	            false)
 	        {            

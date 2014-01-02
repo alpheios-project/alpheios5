@@ -62,7 +62,7 @@ define(['panel','main','logger'], function(panel,main,logger) {
 	    for (var i=0; i<docs.length; i++)
 	    {
 	        var doc = docs[i];
-	        // TODO HTML5 - site implementation
+	        // A5 TODO implement enhanced site functionality
 	        //trans_url = Alph.Site.getTranslationUrl(doc);
 	        if (trans_url)
 	        {

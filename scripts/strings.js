@@ -24,7 +24,7 @@
 define(['require','i18n!nls/baseui','i18n!nls/greekstrings'],function(require,baseui,greek) {
 	return {
 		
-		// TODO HTML5 there has to be a better way to handle language-specific strings 
+		// A5 TODO find a better way to handle Alpheios language-specific UI strings 
 		langStr: {
 			'greek' : greek
 		},

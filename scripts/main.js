@@ -14,7 +14,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 		
 		init_languages: function() {
 			if (languages.getLangList().length == 0) {
-				// TODO get list of languages from ...?
+				// A5 TODO get list of languages from configuration and user preferences
 				languages.addLangTool('greek',new LanguageTool_Greek('greek'));
 				this.show_alpheios_loading();
 			}
@@ -41,7 +41,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	                if (! a_lang) {
 	                	a_lang = lang_list[0];
 	                }
-	                // TODO HTML5 prompt user to select language
+	                // A5 TODO prompt user to select language
 	                // if we still don't know the language, ask the user to choose
 	                //if (! a_lang)
 	                //{                  
@@ -67,7 +67,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        // because it will be called later by the calling toggle method
 	        this.selectLanguage(a_lang,false);
 	        
-	       // TODO HTML5 User data
+	       // A5 TODO implement user data 
 	      //  Alph.DataManager.handleAppEnable(window);
 
 		},
@@ -90,13 +90,13 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        var bro = window;
 	        if ( ! this.isEnabled(bro))
 	        {   
-	        	// TODO HTML5 inline toggle
+	        	// A5 TODO implement options for enabling/disabling the tools
 	            //return this.alphInlineToggle(bro,a_lang);
 	        }
 	        // prompt the user if the language key wasn't supplied
 	        if (! a_lang)
 	        {
-	        	// TODO HTML5 prompt for language
+	        	// A5 TODO implement ui for user language selection
 	            //a_lang = Alph.Main.doLangSelect();    
 	        }        
 	        if ((! a_lang) || (! languages.hasLang(a_lang)))
@@ -117,7 +117,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	            // from the prior language, if any
 	            xlate.removePopup(bro,old_lang_tool);
 	            
-	            // TODO HTML5 wordlist
+	            // A5 TODO implement user data and wordlist
 	            // remove the wordlist observers for the prior language
 	            //if (old_lang_tool)
 	            //{
@@ -133,7 +133,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	            // if called directly, call onTabSelect to update the 
 	            // menu to show which language is current; if not this
 	            // should be handled by the calling method.
-	            // TODO HTML5 tab select
+	            // A5 TODO implement browser state handling and events
 	            if (a_direct)
 	            {
 	                //this.onTabSelect();
@@ -168,7 +168,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        // fallback to the language for the browser
 	        if (!lang_key)
 	        {
-	        	// TODO HTML5 State
+	        	// A5 TODO implement browser state handling 
 	            //lang_key = this.getStateObj(a_bro).getVar("current_language");
 	            lang_key = 'greek';
 	        }
@@ -233,10 +233,10 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        // that case is the browser linked from ...
 	    	var bro = a_window;
 	        
-	    	//TODO HTML5- in plugin we use Alph.Main explicitly here -- this may not
-	    	// be right in all instances
+	    	//A5 TODO  in plugin we use Alph.Main explicitly here -- 'this' object
+	    	// may not work in all instances
 	        var docs = this.getBrowserDocs(bro);
-	        // TODO HTML5 Site functionality
+	        // A5 TODO implement enhanced Site functionality
 	        var ped_site = []; 
 	        //    Alph.Site.isPedSite(docs);
 	        var mixed_site = false;        
@@ -249,7 +249,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        }
 	        else 
 	        {
-	        	// TODO HTML5 Site functionality
+		        // A5 TODO implement enhanced Site functionality
 	            //mixed_site = Alph.Site.isMixedSite(docs)
 	            if (mixed_site.length >0)
 	            {
@@ -257,7 +257,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	            }
 	            else
 	            {
-	            	// TODO HTML5 Site functionality
+	    	        // A5 TODO implement enhanced Site functionality
 	                //page_langs=[Alph.Site.isBasicSite(Alph.BrowserUtils.getSvc('IO').newURI(bro.contentDocument.location,null,null))];
 	            }   
 	        }
@@ -280,7 +280,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	            if (! this.isEnabled(bro))
 	            {
 	                logger.info("Auto-enabling alpheios for " + auto_lang);
-	                // TODO HTML5 Autotoggle
+	                // A5 TODO implement options for auto enabling/disabling tools
 	                //this.autoToggle(bro,auto_lang);
 	                return;
 	            }
@@ -310,7 +310,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        // the extension, then disable it again
 	        else if (this.isEnabled(bro) && ! this.toggledByUser(bro))
 	        {
-	        	// TODO HTML5 autotoglle
+                // A5 TODO implement options for auto enabling/disabling tools
 	            //this.autoToggle(bro);
 	        }
 	        if (this.isEnabled(bro))
@@ -327,7 +327,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	            // from Alph.Main.onTabSelect
 
 	            // inject the pedagogical site with the alpheios-specific elements
-	        	// TODO HTML5 Site and Query
+                // A5 TODO implement enhanced site and quiz functionality
 	            //Alph.Site.setupPage(docs,
 	            //   Alph.Translation.INTERLINEAR_TARGET_SRC);
 	            
@@ -418,7 +418,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        
 	        if (ped_site.length > 0)
 	        {
-	        	// TODO HTML5 Site
+                // A5 TODO implement enhanced site functionality
 	            //Alph.Site.updateSiteToolStatus(docs);
 	        }    
 	            
@@ -482,7 +482,7 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        
 	        // if we weren't explicity passed the mode, check to see
 	        // if it's present in the querystring for the page
-	        // TODO HTML5 use of history to manage changes in page state
+	        // A5 TODO use HTML5 history state to manage changes in page state
 	        if (typeof a_mode == "undefined")
 	        {
 	            //var requested_mode = a_bro.currentURI.path.match(/alpheios_mode=([^&;#]+)/);
@@ -521,17 +521,17 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	            // close the query window
 	            if (a_mode == constants.LEVELS.READER)
 	            {
-	            	// TODO HTML5 Query
+	                // A5 TODO implement quiz functionality
 	                //Alph.Interactive.closeQueryDisplay(a_bro);
 	            }
 	        }
 	        var new_mode = this.getStateObj(a_bro).getVar("level");
 	        
-	        // TODO HTML5 Site and Translation
+	        // A5 TODO implement enhanced site functionality
 	        // update the site toolbar
 	        //Alph.Site.setCurrentMode(Alph.Main.getBrowserDocs(a_bro),new_mode);
 	        //Alph.Translation.setCurrentMode(new_mode);
-	        // TODO HTML5 Toolbar UI
+	        // A5 TODO implement Toolbar UI
 	        // make sure the ff toolbar button has the right state
 	        //$("toolbarbutton[group=AlpheiosLevelGroup]").each(
 	        //    function() { this.setAttribute("checked",'false');}
@@ -624,14 +624,14 @@ define(['jquery','browser-utils','xlate','utils','lang-tool-greek','languages','
 	        $(document).bind(a_trigger, this.doXlateText);
 			
 	        this.getStateObj(a_bro).setVar("xlate_trigger",a_trigger);
-	        // TODO HTML5 BROADCAST State
+	        // A5 TODO implement UI events
 	        if (a_broadcast)
 	        {
-	        	// TODO HTML5 toolbar UI 
+	        	// A5 TODO implementtoolbar UI 
 	            //this.setTbHints();
 	        }
 	        // update the trigger in any secondary windows opened by this browser
-	        // TODO HTML5 Secondary window handling
+	        // A5 TODO implement secondary window state
 	        //var windows = this.getStateObj(a_bro).getVar("windows");
 	        //for (var win in windows)
 	        //{

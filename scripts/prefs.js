@@ -2,13 +2,13 @@ define(["require",'logger','module'], function(require,logger,module) {
  return {
      
 	 set: function(a_name,a_value) {
-		 // TODO HTML5 set preferences
+		 // A5 TODO implement user preferences
 		 // this[a_name] = a_value;
 	 },
 	 
 	 get: function(a_name,a_lang) {
 		 var value = null;
-	     // TODO HTML5 hierarchical values
+	     // A5 TODO support hierarchical preferences
 		 if (a_lang != null) {
 			var main = require('main');
 			var tmp = $('<div lang="' + a_lang + '"/>').get(0);

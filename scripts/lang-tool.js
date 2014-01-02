@@ -916,7 +916,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             e_srcDoc: a_node ? a_node.ownerDocument : null,
 	             e_proxiedEvent: thisObj.getPopupTrigger(),
 	             e_proxiedHandler: main.doXlateText,
-	             // TODO HTML5 implement data manager
+	             // A5 TODO implement user data management
 	             //e_dataManager : Alph.DataManager,
 	             e_dataManager: null,
 	             e_viewer: true,
@@ -930,7 +930,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     var loading_node = $("#alph-word-tools",a_node).get(0);    
 	     if (a_node && ! params.e_url)
 	     {
-	    	 // TODO HTML5 implement Site
+	    	 // A5 TODO implement Site-specific functionality
 	         //var treebankUrl = Alph.Site.getTreebankDiagramUrl(a_node.ownerDocument);
 	    	 var treebankUrl = null;
 	         var tbrefs = a_params.tbrefs;
@@ -1698,7 +1698,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     // add diagram link, if appropriate (only add if we have a treebank reference
 	     // and we're not already on the tree
 	     if (a_target.getTreebankRef() &&
-	    		 //TODO HTML5 Site impl.
+	    		 //A5 TODO implement enhanced site functionality
 //	         Alph.Site.getTreebankDiagramUrl($(a_node).get(0).ownerDocument) &&
 	    		 false &&
 	         $("#dependency-tree",$(a_node).get(0).ownerDocument).length == 0)
@@ -1717,7 +1717,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         // defined per language (defaults to external treebank editor)
 	         if (diagram_cmd &&
 	        		 
-	        		 // TODO HTML5 Site impl
+		    		 //A5 TODO implement enhanced site functionality
 	             //Alph.Site.getMetadataVersion("alpheios-treebank-diagram-url",
 	             //    $(a_node).get(0).ownerDocument) > 0
 	        		 false)
@@ -1762,9 +1762,13 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         $('#alph-word-tools .alph-dict-link',a_node).bind('tap',
 	             function(a_event)
 	             {
-	            	 //TODO HTML5 events
-	                 //main.broadcastUiEvent(constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
-	            	// get a callback to the current dictionary
+	        	 	//A5 TODO ideally should implement as in plugin via UI events e.g.: 
+	                //main.broadcastUiEvent(constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
+	                // for now just implementing directly as a link which always opens 
+	        	    // the dictionary in a secondary window. This is based on code from 
+	        	    // alph-dict.js observeUIEvent
+	        	
+	        	 	// get a callback to the current dictionary
 	         	    var dictionary_callback = lang_tool.getDictionaryCallback();
 	         	    
 	         	    var src_doc = $(a_node).get(0).ownerDocument; 
@@ -1775,7 +1779,6 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         	    // from the lexicon display
 	         	    $(".loading",alph_window).remove();
 	         	    $(".alph-dict-block",alph_window).remove();
-
 
 	         	    // pull the new lemmas out of the alph-window lexicon element
 	         	    var lemmas = [];
@@ -1909,7 +1912,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	                 if (butils.doConfirm(window,added_msg))
 	                 {
 	                     lang_tool.addToWordList(a_node,true,true);
-	                     // TODO HTML5 Site impl
+	                     // A5 TODO implement user word lists
 	                     //Alph.Site.toggleWordStatus(
 	                     //        lang_tool,$(a_node).get(0).ownerDocument,normalizedWord);
 	                 }
@@ -1948,7 +1951,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     $('.alph-diagram-link',tools).bind('tap',
 	         function(a_e)
 	         {
-	        	 // TODO HTML5 browser tab functionality
+	        	 // A5 TODO implement browser state across windows
 	             //if (Alph.BrowserUtils.selectBrowserForDoc(window,a_node.ownerDocument))
 	        	 if (false)
 	             {
@@ -1967,7 +1970,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     $('.alph-inflect-link',tools).bind,('tap',
 	         function(a_e)
 	         {
-	        	 // TODO HTML5 browser tab functionality
+        	     // A5 TODO implement browser state across windows
 	             //if ( Alph.BrowserUtils.selectBrowserForDoc(window,a_node.ownerDocument))
 	        	 if (false)
 	             {
@@ -1987,11 +1990,11 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     $('.alph-dict-link',tools).bind('tap',
 	         function(a_event)
 	         {
-	        	 // TODO HTML5 browser tab functionality
+          	     // A5 TODO implement browser state across windows
 	             //if (Alph.BrowserUtils.selectBrowserForDoc(window,$(a_node).get(0).ownerDocument))
 	        	 if (false)
 	             {
-	        		 // TODO HTML5 events
+	        		 // A5 TODO see note under addWordTools
 	                 //main.broadcastUiEvent(
 	                 //    constants.EVENTS.SHOW_DICT,{src_node: $(a_node).get(0)});
 	             }
@@ -2009,7 +2012,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     $(".alph-speech-link",tools).bind('tap',
 	         function(a_e)
 	         {
-	        	 // TODO HTML5 browser tab functionality
+        	     // A5 TODO implement browser state across windows
 	             //if ( Alph.BrowserUtils.selectBrowserForDoc(window,$(a_node).get(0).ownerDocument))
 	        	 if (false)
 	             {                
@@ -2272,7 +2275,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	  */
 	 LanguageTool.prototype.getWordList = function()
 	 {
-		 // TODO HTML5 implement data manager
+		 // A5 TODO implement user data functionality
 	     //return (Alph.DataManager.getDataObj('words',this.d_sourceLanguage,true));
 	 };
 
@@ -2329,7 +2332,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     );
 	     if (updated)
 	     {
-	    	 // TODO HTML5 events
+	    	 // A5 TODO implement UI events
 	         //main.broadcastUiEvent(constants.EVENTS.VOCAB_UPDATE, { src_node: $(a_node).get(0) });        
 	     }
 	 };

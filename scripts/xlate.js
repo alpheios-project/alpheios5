@@ -379,7 +379,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        //var browser = this.getBrowser(a_elem);
 	        var lang_tool = main.getLanguageTool(a_elem);
 	        const topdoc = a_elem.ownerDocument;
-	        // TODO HTML 5 browser state
+	        // A5 TODO implement browser state across windows
 	        //var alph_state = Alph.Main.getStateObj(browser);
 	        var popup = $("#alph-window").get(0);
 	        // check the alpheios state object for the prior element
@@ -395,7 +395,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        }
 	        // if the popup window exists, and it's in a different document than
 	        // the current one, remove it from the prior document
-	        // TODO HTML5 browser state
+	        // A5 TODO implement browser state across windows
 	        //if (popup && (topdoc != alph_state.getVar("lastElem").ownerDocument))
 	        if (false)
 	        {
@@ -423,7 +423,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	            lang_tool.addStyleSheet(topdoc);
 	            
 	            // flag the popup if we're on an enhanced text site
-	            // TODO HTML5 site functionality
+		        // A5 TODO implement enhanced site functionality
 	            //var enhanced_class = Alph.Site.isPedSite([topdoc]).length > 0 ? ' alpheios-enhanced' : '';
 	            var enhanced_class ='';
 	            
@@ -461,7 +461,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	
 	        // add the element to the alpheios state object in the browser,
 	        // so that it can be accessed to remove the popup later
-	        // TODO HTML5 browser state
+	        // A5 TODO implement browser state
 	        //alph_state.setVar("lastElem",a_elem);
 	
 	        popup.style.width = "auto";
@@ -518,7 +518,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        xlate.repositionPopup(popup);
 	        // add the original word to the browser's alpheios object so that the
 	        // other functions can access it
-	        // TODO HTML5 browser state
+	        // A5 TODO implement browser state 
 	        //alph_state.setVar("word",a_alphtarget.getWord());
 	
 	        var doc_array = [topdoc];
@@ -568,13 +568,13 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	     */
 	    hidePopup: function(a_node)
 	    {
-	    	// TODO HTML5 browser state
+	        // A5 TODO implement browser state across windows
 	        //var topdoc = a_node || this.getLastDoc();
 	    	var topdoc = a_node;
 	        $("#alph-window",topdoc).css("display","none");
 	        $("#alph-text",topdoc).remove();
 	        xlate.clearSelection(topdoc);
-	        // TODO HTML5 browser state
+	        // A5 TODO implement browser state 
 	        // remove the last word from the state
 	        //var alph_state = Alph.Main.getStateObj();
 	        //if (alph_state.getVar("enabled"))
@@ -583,7 +583,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        //    alph_state.setVar("lastSelection",null);
 	
 	        //}
-	        // TODO HTML 5 events
+	        // A5 TODO implement UI events
 	        //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.HIDE_POPUP);
 	        // keep the last element in the state, so that we can find
 	        // the popup (and stylesheets) again
@@ -711,7 +711,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	    },
 	    
 	    getLastDoc : function() {
-	    	// TODO HTML5 browser state
+	        // A5 TODO implement browser state across windows
 	    	return document;
 	    },
 	    
@@ -751,7 +751,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                );
 	           }
 	       );
-	        // TODO HTML5 events
+	       // A5 TODO implement ui events
 	       //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
 	    },
 	    /**
@@ -809,7 +809,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                + encodeURIComponent(a_alphtarget.getWord());
 	        }
 	        a_lang_tool.postTransform(alphtext_node);
-	        // TODO HTML5 query functionality
+	        // A5 TODO implement quiz functionality
 	        //if (Alph.Interactive.enabled())
 	        //{
 	        //    Alph.$("#alph-window",a_topdoc).addClass("query-pending");
@@ -903,7 +903,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                                }
 	                            }
 	                        );
-	                        // TODO HTML5 events
+	            	        // A5 TODO implement ui events
 	                        //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
 	                    },
 	                    success: function(data, textStatus)
@@ -920,7 +920,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        }
 	        else
 	        {
-	        	// TODO HTML5 events and queyr
+		        // A5 TODO implement ui events and enhanced site functionality
 	            //Alph.Main.broadcastUiEvent(Alph.Constants.EVENTS.SHOW_TRANS);
 	            //if (! Alph.Interactive.enabled())
 	            //{
@@ -1376,7 +1376,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	         // it doesn't seem possible to reset the window.arguments
 	         // so if arguments are being passed to the new window,
 	         // just proceed as if opening a new window
-	    	 // TODO HTML5 window state
+		     // A5 TODO implement browser state across windows
 	         //var windows =
 	         //    Alph.Main.getStateObj(Alph.Main.getCurrentBrowser())
 	         //    .getVar("windows");
@@ -1443,7 +1443,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	             // of the newly opened window
 	             var features =
 	             {
-	                 chrome: "no", // TODO HTML5 chrome equivalent?
+	                 chrome: "no", // A5 TODO chrome equivalent?
 	                 dialog: "no",
 	                 resizable: "yes",
 	                 width: "800",
@@ -1534,7 +1534,9 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	             // install the onload handler in the new window
 	             if (a_load_call != null)
 	             {
-	            	 // TODO HTML5 HACK to hide loading message until
+	            	 // TODO A5 support callback issues from opened window. 
+	            	 // for now implementation assumes the load callback is done
+	            	 // in the parent opener process
 	            	 // panels and window state are managed
 	            	     //a_window.addEventListener(
 		                 //            "load",
@@ -1584,7 +1586,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	         // now focus the window
 	         a_window.focus();
 	         logger.info("Secondary window should have focus at "+ a_url);
-	         // TODO HTML5 window state
+		      // A5 TODO implement browser state across windows
 	         //windows[a_name] = a_window;
 	         return a_window;
 	     },
@@ -1604,7 +1606,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 
 	             // also check the morphology panel (dictionary window doesn't 
 	             // contain any links to new windows)
-	             // TODO HTML5 panels
+	 	         // A5 TODO implement various UI elements (maybe as panels)
 	             //Alph.Main.d_panels['alph-morph-panel'].getCurrentDoc().forEach
 	             //(
 	             //    function(a_doc)
@@ -1613,7 +1615,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	             //    }
 	             //);
 	             
-	             // TODO HTML5 Query
+	 	         // A5 TODO implement quiz functionality
 	             // and the query window
 	             //var qdoc = Alph.Interactive.getQueryDoc();
 	             //if (qdoc)
@@ -1653,7 +1655,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	         // remove the alpheios window element
 	         $("#alph-window",last_doc).remove();
 
-	         // TODO HTML5 panels
+		     // A5 TODO implement ui elements - maybe as panels
 	         // also clear the morphology and dictionary panels
 	         //main.d_panels['alph-morph-panel'].getCurrentDoc().forEach(
 	         //    function(a_doc)
@@ -1676,7 +1678,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	         //    }
 	         //);
 
-	         // TODO HTML5 events
+		     // A5 TODO implement UI events
 	         //main.broadcastUiEvent(constants.EVENTS.REMOVE_POPUP);
 
 	      },

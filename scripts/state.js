@@ -39,8 +39,8 @@ define([],function(){
 	    'd_defaults' : {   
 	    	'enabled': [false,true],
 	        'toggled_by': [this.SYS_ACTION,true],
-	        'windows': [{}, true], // HTML5 TODO Jsonify for storage
-	        'panels': [{}, true],  // HTML5 TODO Jsonify for storage
+	        'windows': [{}, true], // A5 TODO Jsonify for storage
+	        'panels': [{}, true],  // A5 TODO Jsonify for storage
 	        'xlate_trigger': [null,true],
 	        'current_language': ["",true],
 	        'lastElem': [null,false],

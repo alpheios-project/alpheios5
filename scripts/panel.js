@@ -330,7 +330,7 @@ define(['jquery','main','logger','prefs','xlate','languages'],
 	        }
 	    }
 	    
-	    // TODOHTML5 - implement Site for html5
+	    // A5 TODO implement enhanced Site functionality
 	    //Alph.Site.setToolbarPanelStatus(main.getBrowserDocs(bro),this.d_panelId,a_status);
 	    
 	    // if the panel status changed, call observeUIEvent to make sure the 

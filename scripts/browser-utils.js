@@ -38,7 +38,6 @@ define(["jquery","i18n!nls/baseui",'logger','prefs','sarissa/sarissa'], function
 	     getXsltProcessor: function(a_filename,a_lang, a_callback)
 	    {
 	        
-	        // first try to load and import using a chrome url
 	        try
 	        {
 	            var xslt_url = prefs.get('contenturl',a_lang) + '/xslt/' + a_filename;
@@ -53,26 +52,6 @@ define(["jquery","i18n!nls/baseui",'logger','prefs','sarissa/sarissa'], function
 	        catch(a_e)
 	        {
 	        	logger.error(a_e);
-	          // TODO HTML5 local xslt handling??
-	          // if that fails, try loading directly from the filesystem using XMLHttpRequest   
-	          // see https://bugzilla.mozilla.org/show_bug.cgi?id=422502
-	          //  try
-	          //  {
-	          //      var pkg_path = this.getExtensionBasePath(this.getPkgName(a_lang));
-	          //      pkg_path.append('xslt');
-	          //      pkg_path.append(a_filename);
-	          //      var path_url = 'file:///' + pkg_path.path;
-	          //      this.debug("XHR Loading xslt at " + path_url);
-	          //      var p = new recent_win.XMLHttpRequest();      
-	          //      p.open("GET", path_url, false);
-	          //      p.send(null);
-	          //      xsltProcessor.importStylesheet(p.responseXML);
-	          //  }
-	          //  catch(a_ee)
-	          //  {
-	                // if that fails, we're out of luck
-	          //      this.debug("Unable to load stylesheet " + a_filename + " for " + a_lang + " : " + a_e + "," + a_ee);
-	          //  }
 	        }
 	    },
 	    
@@ -83,7 +62,8 @@ define(["jquery","i18n!nls/baseui",'logger','prefs','sarissa/sarissa'], function
 	     */
 	    openNewTab: function(a_window,a_url)
 	    {
-	    	// TODO HTML5 open in new tab??
+	    	// A5 TODO for now this just uses window.open -- eventually we may
+	    	// want to support different functionality esp. for mobile vs desktop?
 	        a_window.open(a_url);
 	    },
 	    
@@ -136,7 +116,9 @@ define(["jquery","i18n!nls/baseui",'logger','prefs','sarissa/sarissa'], function
 	    },
 	    
 	    getMostRecentWindow: function() {
-	    	// TODO HTML5 if we support state
+	    	// A5 TODO the plugins kept track of the different state of the tools in
+	    	// different browser tabs - for just always assume the current window
+	    	// but we may at some point want to support more advanced state.
 	    	return window;
 	    }
  };
