@@ -1,0 +1,18 @@
+@import url("chrome://alpheios-greek/skin/alpheios-greek-os.css");
+
+/* unhighlight the grammar conj links for now */
+.alph-conj {
+    color: #0E2233;
+    cursor: default;
+}
+
+/* add highlighting to some other grammar terms */
+.alph-tense,.alph-voice,.alph-pers {
+    color: #3E8D9C;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.alph-tense:hover,.alph-voice:hover,.alph-pers:hover {
+    color: #5BC8DC;
+}

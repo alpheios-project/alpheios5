@@ -1,0 +1,19 @@
+/* Placeholder CSS for OS Specific Styles ( Main Interface ) */
+.alph-close-button {
+    float: right;
+    width: 16px;
+    cursor: pointer;
+    padding: 0 !important;
+    border: none !important;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    background-image: url("close.png");
+}
+
+.alph-close-button:hover {
+    background-image: url("closeHover.png");
+}
+
+.alph-close-button:hover:active {
+    background-image: url("closeActive.png");
+}
