@@ -36,7 +36,7 @@
 /**
  * @class Alph.Xlate contains the generic popup functionality
  */
-define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','utils'], function(require,$,logger,prefs,butils,baseui,utils) {
+define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','utils','site'], function(require,$,logger,prefs,butils,baseui,utils,site) {
 	var xlate = {
 
         setXsltProcessor: function(a_proc) {
@@ -119,7 +119,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        
 	        // check to see if the site has defined an override to our word
 	        // selection algorithm based upon element class names (See Bug 377)
-	        //var wordClasses = Alph.Site.getWordClasses(rp.ownerDocument);
+	        //var wordClasses = site.getWordClasses(rp.ownerDocument);
 	        var wordClassOverride = false;
 	        var wordClasses = [];
 	        for (var i=0; i<wordClasses.length; i++)
@@ -150,7 +150,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        }
 	        
 	        // in a mixed site, ignore everything except explicity enabled text
-	        //if (Alph.Site.isMixedSite([rp.ownerDocument]).length > 0 && 
+	        //if (site.isMixedSite([rp.ownerDocument]).length > 0 && 
 	        //    (! $(a_e.explicitOriginalTarget).hasClass('alpheios-enabled-text')) &&
 	        //      $(a_e.explicitOriginalTarget).parents('.alpheios-enabled-text').length == 0)
 	        //{
@@ -322,7 +322,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        if (treebank_ref)
 	        {
 	            alphtarget.setTreebankRef(treebank_ref);
-	            var treebank_url = Alph.Site.getTreebankUrl(doc);
+	            var treebank_url = site.getTreebankUrl(window.document);
 	            var treebank_wds = treebank_ref.split(' ');
 
 	            // if we're in the dependency tree diagram, we will have a treebank reference
@@ -331,7 +331,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	            if (!treebank_url && is_svg_text )
 	            {
 //	                treebank_url =
-//	                    Alph.Site.getTreebankUrl(browser.contentDocument);
+//	                    site.getTreebankUrl(browser.contentDocument);
 	            }
 	            if (treebank_url)
 	            {
@@ -424,7 +424,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	            
 	            // flag the popup if we're on an enhanced text site
 		        // A5 TODO implement enhanced site functionality
-	            //var enhanced_class = Alph.Site.isPedSite([topdoc]).length > 0 ? ' alpheios-enhanced' : '';
+	            //var enhanced_class = site.isPedSite([topdoc]).length > 0 ? ' alpheios-enhanced' : '';
 	            var enhanced_class ='';
 	            
 	            popup = topdoc.createElementNS("http://www.w3.org/1999/xhtml", "div");
@@ -880,7 +880,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                {
 	                    type: "GET",
 	                    url: a_alphtarget.getTreebankQuery(),
-	                    timeout: butils.getPref("url_treebank_timeout") || 5000,
+	                    timeout: prefs.get("url_treebank_timeout") || 5000,
 	                    dataType: 'html',
 	                    error: function(req,textStatus,errorThrown)
 	                    {
@@ -891,8 +891,8 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                            {
 	                                try
 	                                {
-	                                    $("#alph-window[alpheios-pending="+
-	                                           disambiguate_id+"]",
+	                                    $("#alph-window[alpheios-pending='"+
+	                                           disambiguate_id+"']",
 	                                           a_doc).get(0).removeAttribute(
 	                                                            "alpheios-pending");
 	                                }
@@ -963,7 +963,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                {
 	                    try
 	                    {
-	                        $("#alph-window[alpheios-pending="+a_req_id+"]",
+	                        $("#alph-window[alpheios-pending='"+a_req_id+"']",
 	                                   a_doc).get(0).removeAttribute("alpheios-pending");
 	                    }
 	                    catch(a_e){
@@ -977,8 +977,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        else
 	        {
 
-	            var new_text_node =
-	                    window.content.document.importNode(
+	            var new_text_node = a_topdoc.importNode(
 	                    $("#alph-text",wordHTML).get(0),true);
 
 	            a_lang_tool.postTransform(new_text_node);
@@ -1000,8 +999,8 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                // won't match and we will just discard the disabmiguation
 	                // results rather than trying to merge them into a new words' results
 	                var popup =
-	                        $("#alph-window[alpheios-pending=" + a_req_id +
-	                                "] #alph-text",a_doc);
+	                        $("#alph-window[alpheios-pending='" + a_req_id +
+	                                "'] #alph-text",a_doc);
 	                if (popup.length == 0)
 	                {
 	                    logger.warn("Discarding disamibuguation " + a_req_id);
@@ -1016,8 +1015,8 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                for (var e_index=0; e_index < new_entries.length; e_index++)
 	                {
 	                    var new_entry = new_entries.eq(e_index);
-	                    var new_dict = Alph.$(".alph-dict",new_entry);
-	                    var new_hdwd = Alph.$(new_dict).attr("lemma-key");
+	                    var new_dict = $(".alph-dict",new_entry);
+	                    var new_hdwd = $(new_dict).attr("lemma-key");
 	                    var new_infl_node =
 	                        $(".alph-infl",new_entry).get(0);
 	                    var new_pofs = $('.alph-pofs',new_entry).attr('context');
@@ -1269,7 +1268,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                    $('#alph-morph-credits',popup).before(word);
 	                }
 	                $(popup).prepend('<div id="alph-word-tools"/>');
-	                a_lang_tool.addWordTools(Alph.$(popup),a_alphtarget);
+	                a_lang_tool.addWordTools($(popup),a_alphtarget);
 	                // add the treebank credits
 	                var tb_credit = a_lang_tool.getString("treebank.credits");
 	                $("#alph-morph-credits",popup).append('<div id="alph-treebank-credits">' +
@@ -1279,7 +1278,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	                // popup
 	                try
 	                {
-	                    $("#alph-window[alpheios-pending="+a_req_id+"]",
+	                    $("#alph-window[alpheios-pending='"+a_req_id+"']",
 	                               a_doc).get(0).removeAttribute("alpheios-pending");
 	                    xlate.repositionPopup($("#alph-window",a_doc));
 	                    
@@ -1622,6 +1621,7 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	             //{
 	              //       Alph.$("#alph-secondary-loading",qdoc).remove();
 	             //}
+                     window.opener.$("#alph-secondary-loading",qdoc).remove();
 	         }
 	         catch(e)
 	         {
@@ -1705,8 +1705,9 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	      {
 	          if ($("#alph-secondary-loading",a_args[0]).length == 0 )
 	          {
-	              $(a_args[0]).append(
-	                  '<div id="alph-secondary-loading">' + a_args[1] + '</div>');
+                      // A5 TODO skip until we implement callbacks from secondary windows
+	              //$(a_args[0]).append(
+	              //    '<div id="alph-secondary-loading">' + a_args[1] + '</div>');
 	          }
 	      }
 

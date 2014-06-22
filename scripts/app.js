@@ -24,12 +24,10 @@ require.config({
     			 "alpheios-interlinear" : false,
     			 "alpheios-speech" : true
     		 },
-    		 "cmds": {
-    			 "alpheios-inflect-cmd" : "handleInflections",
-    			 "alpheios-morph-inflect-cmd" : "handleInflectionsForMorphWindow",
-    			 "alpheios-grammar-cmd" : "openGrammar",
-    			 "alpheios-diagram-cmd" : "openDiagram"
-    		 },
+    		 "cmds_alpheios-inflect-cmd" : "handleInflections",
+    		 "cmds_apheios-morph-inflect-cmd" : "handleInflectionsForMorphWindow",
+    		 "cmds_alpheios-grammar-cmd" : "openGrammar",
+    		 "cmds_alpheios-diagram-cmd" : "openDiagram",
     		 "panels": {
     			 "sticky" : true,
     			 "inline_alph-dict-panel" : false,
@@ -117,8 +115,8 @@ require.config({
 			"popuptrigger":'tap',
 			"url_grammar":"chrome://alpheios-greek/content/alph-greek-grammar.xul",
 			"grammar_hotlinks":"alph-decl,alph-pofs,alph-mood,alph-case,alph-voice,alph-pers,alph-tense,alph-pofs-extra",
-			"features_alpheios-grammar":"true",
-			"features_alpheios-inflect":"true",
+			"features_alpheios-grammar":"false",
+			"features_alpheios-inflect":"false",
 			"context_handler":"grammarContext",
 			"panels_use_defaults":"true",
 			"dictionaries_short":"as,aut,ml,lsj",

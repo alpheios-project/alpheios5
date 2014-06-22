@@ -32,8 +32,8 @@
  * @param {Properties} a_properties additional properties to set as private members of
  *                                  the object (accessor methods will be dynamically created)
  */
-define(['jquery','strings','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"datafile","module","jquery.tap"], 
-		function($,strings,main,logger,prefs,Convert,constants,select,xlate,butils,utils,Datafile,module) {
+define(['jquery','strings','main','logger','prefs','convert','constants','src-select','xlate','browser-utils','utils',"datafile","module","site","jquery.tap"], 
+		function($,strings,main,logger,prefs,Convert,constants,select,xlate,butils,utils,Datafile,module,site) {
 	 /**
 	  * @class  LanguageTool is the base class for language-specific
 	  * functionality.
@@ -894,17 +894,21 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     if (! a_title)
 	     {
 	         // translation panel and source document diagrams should open in separate windows
-	         if (translation.getBrowser($(a_node).get(0).ownerDocument))
-	         {
-	             a_title = 'alph-trans-diagram-window';   
-	         } 
-	         else
-	         {
+                 // A5 TODO alignments
+	         //if (translation.getBrowser($(a_node).get(0).ownerDocument))
+	         //{
+	         //    a_title = 'alph-trans-diagram-window';   
+	         //} 
+	         //else
+	         //{
 	             a_title = 'alph-diagram-window';
-	         }
+	         //}
 	     }
 	     
-	     var features = {};
+	     var features = {
+                "width" : "1366",
+                "height" : "768"
+             };
 
 	     var window_url = this.getModule().config().contenturl + "/diagram/alpheios-diagram.xul";
 	     var params = $.extend(
@@ -915,13 +919,12 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	             e_langTool: thisObj,
 	             e_srcDoc: a_node ? a_node.ownerDocument : null,
 	             e_proxiedEvent: thisObj.getPopupTrigger(),
-	             e_proxiedHandler: main.doXlateText,
+                     // A5 TODO implement backwars access to popup in secondary windows
+	             //e_proxiedHandler: main.doXlateText,
 	             // A5 TODO implement user data management
 	             //e_dataManager : Alph.DataManager,
 	             e_dataManager: null,
-	             e_viewer: true,
-	             e_metadata: { 'alpheios-getSentenceURL': window_url,
-	                         'alpheios-putSentenceURL': window_url }            
+	             e_viewer: true
 	         },
 	         a_params || {}
 	     );
@@ -930,9 +933,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     var loading_node = $("#alph-word-tools",a_node).get(0);    
 	     if (a_node && ! params.e_url)
 	     {
-	    	 // A5 TODO implement Site-specific functionality
-	         //var treebankUrl = Alph.Site.getTreebankDiagramUrl(a_node.ownerDocument);
-	    	 var treebankUrl = null;
+	         var treebankUrl = site.getTreebankDiagramUrl(a_node.ownerDocument);
 	         var tbrefs = a_params.tbrefs;
 	         var sentence;
 	         var word;
@@ -964,7 +965,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         // open or replace the diagram window
 	         xlate.openSecondaryWindow(
 	             a_title,
-	             window_url,            
+	             params.e_url,
 	             features,
 	             params,
 	             xlate.showLoadingMessage,
@@ -1193,7 +1194,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	 {
 	     var enabled = prefs.get("features_"+a_id,this.d_sourceLanguage);
 	     logger.debug("Feature " + a_id + " for " + this.d_sourceLanguage + " is " + enabled);
-	     return enabled;
+	     return enabled && enabled != 'false';
 	 };
 
 	 /**
@@ -1698,9 +1699,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	     // add diagram link, if appropriate (only add if we have a treebank reference
 	     // and we're not already on the tree
 	     if (a_target.getTreebankRef() &&
-	    		 //A5 TODO implement enhanced site functionality
-//	         Alph.Site.getTreebankDiagramUrl($(a_node).get(0).ownerDocument) &&
-	    		 false &&
+	         site.getTreebankDiagramUrl($(a_node).get(0).ownerDocument) &&
 	         $("#dependency-tree",$(a_node).get(0).ownerDocument).length == 0)
 	     {
 	         var diagram_alt_text = strings.getString("diagram_link");
@@ -1715,16 +1714,12 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	         var diagram_cmd = lang_tool.getCmd('alpheios-diagram-cmd');
 	         // for version > 0 of treebank metadatum, use treebank diagramming command
 	         // defined per language (defaults to external treebank editor)
-	         if (diagram_cmd &&
-	        		 
-		    		 //A5 TODO implement enhanced site functionality
-	             //Alph.Site.getMetadataVersion("alpheios-treebank-diagram-url",
-	             //    $(a_node).get(0).ownerDocument) > 0
-	        		 false)
+	         if (diagram_cmd && 
+                     site.getMetadataVersion("alpheios-treebank-diagram-url",$(a_node).get(0).ownerDocument) > 0)
 	         {   
 	             diagram_func = function(a_e)
 	             {
-	                 xlate.showLoadingMessage([tools_node,strings.getString("loading_misc")]);
+	                 //xlate.showLoadingMessage([tools_node,strings.getString("loading_misc")]);
 	                 lang_tool[diagram_cmd](a_e,null,$(a_node).get(0),{tbrefs:a_target.getTreebankRef()});
 	                 return false;
 	             }
@@ -1740,7 +1735,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	                 return false;
 	             }
 	         }
-	         $('#alph-word-tools .alph-diagram-link',a_node).tap(diagram_func);
+	         $('#alph-word-tools .alph-diagram-link',a_node).bind('tap',diagram_func);
 	     }
 	     // add language-specific dictionary link, if any
 	     var lemmas = [];
@@ -1913,7 +1908,7 @@ define(['jquery','strings','main','logger','prefs','convert','constants','src-se
 	                 {
 	                     lang_tool.addToWordList(a_node,true,true);
 	                     // A5 TODO implement user word lists
-	                     //Alph.Site.toggleWordStatus(
+	                     //site.toggleWordStatus(
 	                     //        lang_tool,$(a_node).get(0).ownerDocument,normalizedWord);
 	                 }
 	                 return false;
