@@ -64,6 +64,10 @@ define(['require','jquery','logger','prefs','browser-utils','i18n!nls/baseui','u
 	        	rp = a_e.rangeParent;
 	        	ro = a_e.rangeOffset;
 
+	        } else if (a_e.originalEvent.rangeOffset) {
+	        	rp = a_e.originalEvent.rangeParent;
+	        	ro = a_e.originalEvent.rangeOffset;
+
 	        // webkit doesn't support Event.rangeParent    
 	        } else if (document.caretRangeFromPoint) {
 	        	var range = document.caretRangeFromPoint(a_e.clientX, a_e.clientY);
